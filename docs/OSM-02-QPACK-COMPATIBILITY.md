@@ -45,7 +45,8 @@ Opening a container rejects:
 - missing layer files;
 - layer byte size disagreement;
 - manifest-declared size disagreement;
-- half-specified quantization metadata.
+- half-specified quantization metadata;
+- expert quantization whose packed weight/scales shapes disagree with `quantBits` / `quantGroupSize`, matching Swiftlet's load-time corruption guard.
 
 Expert reads reject:
 
@@ -73,7 +74,7 @@ Keeping OSM-02 simple gives us a clean byte-for-byte correctness oracle.
 
 The test creates a synthetic qpack with two layer files and three experts per layer, then verifies that `read_expert(layer=1, expert=2)` returns exactly the 16 bytes stored at its fixed-stride offset.
 
-Negative tests cover corrupt magic, truncated layer files and bounds handling.
+Negative tests cover corrupt magic, truncated layer files, quantization/packed-shape mismatch and bounds handling.
 
 ## Exit gate
 
