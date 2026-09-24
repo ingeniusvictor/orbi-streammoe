@@ -1,6 +1,7 @@
 #include "orbi/streammoe/storage/qpack_expert_storage.hpp"
 
 #include <stdexcept>
+#include <utility>
 
 namespace orbi::streammoe {
 
