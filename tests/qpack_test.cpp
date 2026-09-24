@@ -9,8 +9,11 @@
 #include <vector>
 
 #include "orbi/streammoe/container/qpack.hpp"
+#include "orbi/streammoe/storage/qpack_expert_storage.hpp"
 
 namespace fs = std::filesystem;
+using orbi::streammoe::ExpertReadRequest;
+using orbi::streammoe::QpackExpertStorage;
 using orbi::streammoe::QpackReader;
 
 namespace {
@@ -154,6 +157,40 @@ void test_rejects_quant_shape_mismatch(const fs::path& root) {
   require(rejected, "quantization/packed-shape mismatch was accepted");
 }
 
+
+void test_storage_adapter(const fs::path& root) {
+  make_container(root);
+  QpackExpertStorage storage(root);
+
+  std::vector<std::byte> first(storage.expert_stride_bytes());
+  std::vector<std::byte> second(storage.expert_stride_bytes());
+  std::vector<ExpertReadRequest> requests{
+      {
+          .id = {.layer = 0, .expert = 1},
+          .destination = std::span<std::byte>(first.data(), first.size()),
+      },
+      {
+          .id = {.layer = 1, .expert = 2},
+          .destination = std::span<std::byte>(second.data(), second.size()),
+      },
+  };
+
+  storage.read_experts(requests);
+
+  for (std::size_t i = 0; i < first.size(); ++i) {
+    const auto expected = static_cast<std::uint8_t>(16 + i);
+    require(
+        std::to_integer<std::uint8_t>(first[i]) == expected,
+        "qpack storage adapter first expert mismatch");
+  }
+  for (std::size_t i = 0; i < second.size(); ++i) {
+    const auto expected = static_cast<std::uint8_t>(64 + 2 * 16 + i);
+    require(
+        std::to_integer<std::uint8_t>(second[i]) == expected,
+        "qpack storage adapter second expert mismatch");
+  }
+}
+
 void test_bounds(const fs::path& root) {
   const QpackReader reader(make_container(root));
 
@@ -194,6 +231,7 @@ int main() {
     test_rejects_bad_magic(base / "bad-magic");
     test_rejects_short_layer(base / "short-layer");
     test_rejects_quant_shape_mismatch(base / "bad-quant");
+    test_storage_adapter(base / "storage-adapter");
     test_bounds(base / "bounds");
     fs::remove_all(base);
     std::cout << "OSM-02 qpack compatibility: PASS\n";
