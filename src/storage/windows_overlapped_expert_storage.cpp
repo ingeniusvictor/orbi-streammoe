@@ -9,6 +9,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <exception>
 #include <iomanip>
 #include <limits>
 #include <mutex>
@@ -82,7 +83,8 @@ struct PendingRead {
   EventHandle event;
   HANDLE file{INVALID_HANDLE_VALUE};
   DWORD expected_bytes{};
-  bool completed_synchronously{};
+  bool launched{};
+  DWORD launch_error{ERROR_SUCCESS};
 };
 
 }  // namespace
@@ -164,6 +166,9 @@ void WindowsOverlappedExpertStorage::read_experts(
         "windows expert storage: expert stride exceeds Win32 ReadFile size");
   }
 
+  // Build every OVERLAPPED/event/handle before launching any I/O. This keeps
+  // all OVERLAPPED storage stable for the entire batch and ensures a setup
+  // failure cannot destroy metadata for reads that are already in flight.
   std::vector<PendingRead> pending;
   pending.reserve(requests.size());
 
@@ -191,6 +196,14 @@ void WindowsOverlappedExpertStorage::read_experts(
     item.overlapped.Offset = static_cast<DWORD>(offset & 0xFFFFFFFFULL);
     item.overlapped.OffsetHigh =
         static_cast<DWORD>((offset >> 32U) & 0xFFFFFFFFULL);
+  }
+
+  // Launch the whole batch before waiting. An immediate launch failure is
+  // recorded rather than thrown so already-started reads retain live
+  // OVERLAPPED/event storage until they are drained below.
+  for (std::size_t i = 0; i < requests.size(); ++i) {
+    auto& item = pending[i];
+    auto& request = requests[i];
 
     const BOOL started = ReadFile(
         item.file,
@@ -200,13 +213,15 @@ void WindowsOverlappedExpertStorage::read_experts(
         &item.overlapped);
 
     if (started != FALSE) {
-      item.completed_synchronously = true;
+      item.launched = true;
       continue;
     }
 
     const DWORD error = GetLastError();
-    if (error != ERROR_IO_PENDING) {
-      throw_last_error("ReadFile expert", error);
+    if (error == ERROR_IO_PENDING) {
+      item.launched = true;
+    } else {
+      item.launch_error = error;
     }
   }
 
@@ -214,6 +229,10 @@ void WindowsOverlappedExpertStorage::read_experts(
 
   for (auto& item : pending) {
     try {
+      if (!item.launched) {
+        throw_last_error("ReadFile expert", item.launch_error);
+      }
+
       DWORD transferred = 0;
       const BOOL ok = GetOverlappedResult(
           item.file,
