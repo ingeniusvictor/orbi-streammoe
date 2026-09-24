@@ -21,6 +21,7 @@ FetchContent_MakeAvailable(nlohmann_json)
 add_library(orbi_streammoe_core
   src/core/version.cpp
   src/container/qpack.cpp
+  src/cpu/reference_ops.cpp
 )
 
 target_include_directories(orbi_streammoe_core
@@ -53,6 +54,13 @@ if(ORBI_STREAMMOE_BUILD_TESTS)
   target_link_libraries(orbi_streammoe_qpack_tests PRIVATE orbi_streammoe_core)
   target_compile_features(orbi_streammoe_qpack_tests PRIVATE cxx_std_20)
 
+  add_executable(orbi_streammoe_cpu_reference_tests
+    tests/cpu_reference_test.cpp
+  )
+  target_link_libraries(orbi_streammoe_cpu_reference_tests PRIVATE orbi_streammoe_core)
+  target_compile_features(orbi_streammoe_cpu_reference_tests PRIVATE cxx_std_20)
+
   add_test(NAME orbi_streammoe_smoke COMMAND orbi_streammoe_smoke)
   add_test(NAME orbi_streammoe_qpack_tests COMMAND orbi_streammoe_qpack_tests)
+  add_test(NAME orbi_streammoe_cpu_reference_tests COMMAND orbi_streammoe_cpu_reference_tests)
 endif()
