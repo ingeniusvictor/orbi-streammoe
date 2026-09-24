@@ -30,6 +30,12 @@ if(WIN32)
   target_sources(orbi_streammoe_core PRIVATE
     src/storage/windows_overlapped_expert_storage.cpp
   )
+else()
+  find_package(Threads REQUIRED)
+  target_sources(orbi_streammoe_core PRIVATE
+    src/storage/posix_pread_expert_storage.cpp
+  )
+  target_link_libraries(orbi_streammoe_core PRIVATE Threads::Threads)
 endif()
 
 target_include_directories(orbi_streammoe_core
@@ -89,6 +95,17 @@ if(ORBI_STREAMMOE_BUILD_TESTS)
     add_test(
       NAME orbi_streammoe_windows_io_tests
       COMMAND orbi_streammoe_windows_io_tests
+    )
+  else()
+    add_executable(orbi_streammoe_posix_io_tests
+      tests/posix_pread_storage_test.cpp
+    )
+    target_link_libraries(orbi_streammoe_posix_io_tests PRIVATE orbi_streammoe_core)
+    target_compile_features(orbi_streammoe_posix_io_tests PRIVATE cxx_std_20)
+
+    add_test(
+      NAME orbi_streammoe_posix_io_tests
+      COMMAND orbi_streammoe_posix_io_tests
     )
   endif()
 endif()
