@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.24)
 project(orbi_streammoe
   VERSION 0.1.0
   DESCRIPTION "Portable streamed-MoE inference runtime research"
-  LANGUAGES CXX
+  LANGUAGES C CXX
 )
 
 option(ORBI_STREAMMOE_BUILD_TESTS "Build ORBI StreamMoE tests" ON)
@@ -18,12 +18,37 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(nlohmann_json)
 
+set(VULKAN_HEADERS_ENABLE_TESTS OFF CACHE BOOL "" FORCE)
+set(VULKAN_HEADERS_ENABLE_INSTALL OFF CACHE BOOL "" FORCE)
+set(VULKAN_HEADERS_ENABLE_MODULE OFF CACHE BOOL "" FORCE)
+
+FetchContent_Declare(
+  VulkanHeaders
+  GIT_REPOSITORY https://github.com/KhronosGroup/Vulkan-Headers.git
+  GIT_TAG v1.4.363
+  GIT_SHALLOW TRUE
+)
+FetchContent_MakeAvailable(VulkanHeaders)
+
+set(VOLK_PULL_IN_VULKAN ON CACHE BOOL "" FORCE)
+set(VOLK_INSTALL OFF CACHE BOOL "" FORCE)
+set(VOLK_HEADERS_ONLY OFF CACHE BOOL "" FORCE)
+
+FetchContent_Declare(
+  volk
+  GIT_REPOSITORY https://github.com/zeux/volk.git
+  GIT_TAG vulkan-sdk-1.4.363
+  GIT_SHALLOW TRUE
+)
+FetchContent_MakeAvailable(volk)
+
 add_library(orbi_streammoe_core
   src/core/version.cpp
   src/container/qpack.cpp
   src/cpu/reference_ops.cpp
   src/cache/expert_cache.cpp
   src/storage/qpack_expert_storage.cpp
+  src/backend/vulkan_runtime.cpp
 )
 
 if(WIN32)
@@ -45,7 +70,7 @@ target_include_directories(orbi_streammoe_core
 )
 
 target_compile_features(orbi_streammoe_core PUBLIC cxx_std_20)
-target_link_libraries(orbi_streammoe_core PRIVATE nlohmann_json::nlohmann_json)
+target_link_libraries(orbi_streammoe_core PRIVATE nlohmann_json::nlohmann_json volk::volk)
 
 if(MSVC)
   target_compile_options(orbi_streammoe_core PRIVATE /W4 /permissive-)
@@ -80,10 +105,17 @@ if(ORBI_STREAMMOE_BUILD_TESTS)
   target_link_libraries(orbi_streammoe_expert_cache_tests PRIVATE orbi_streammoe_core)
   target_compile_features(orbi_streammoe_expert_cache_tests PRIVATE cxx_std_20)
 
+  add_executable(orbi_streammoe_vulkan_runtime_tests
+    tests/vulkan_runtime_test.cpp
+  )
+  target_link_libraries(orbi_streammoe_vulkan_runtime_tests PRIVATE orbi_streammoe_core)
+  target_compile_features(orbi_streammoe_vulkan_runtime_tests PRIVATE cxx_std_20)
+
   add_test(NAME orbi_streammoe_smoke COMMAND orbi_streammoe_smoke)
   add_test(NAME orbi_streammoe_qpack_tests COMMAND orbi_streammoe_qpack_tests)
   add_test(NAME orbi_streammoe_cpu_reference_tests COMMAND orbi_streammoe_cpu_reference_tests)
   add_test(NAME orbi_streammoe_expert_cache_tests COMMAND orbi_streammoe_expert_cache_tests)
+  add_test(NAME orbi_streammoe_vulkan_runtime_tests COMMAND orbi_streammoe_vulkan_runtime_tests)
 
   if(WIN32)
     add_executable(orbi_streammoe_windows_io_tests
