@@ -42,10 +42,16 @@ void write_layer(const fs::path& path, std::uint8_t layer_seed) {
   }
 }
 
-fs::path make_container(const fs::path& root, std::string magic = "QPACK") {
+fs::path make_container(
+    const fs::path& root,
+    std::string magic = "QPACK",
+    std::uint32_t quant_group_size = 8) {
   fs::remove_all(root);
   fs::create_directories(root / "packed_experts");
 
+  // For the synthetic quantization geometry below:
+  // weight last dim 2 packed uint32 words at int4 => logical inner dim 16.
+  // scales last dim 2 groups at group size 8 => logical inner dim 16.
   const std::string layout =
       "{\n"
       "  \"expertCount\": 3,\n"
@@ -72,7 +78,7 @@ fs::path make_container(const fs::path& root, std::string magic = "QPACK") {
       "  \"modelName\": \"qwen3_next\",\n"
       "  \"sourceCheckpoint\": \"synthetic-fixture\",\n"
       "  \"quantBits\": 4,\n"
-      "  \"quantGroupSize\": 64,\n"
+      "  \"quantGroupSize\": " + std::to_string(quant_group_size) + ",\n"
       "  \"files\": {\n"
       "    \"packed_experts/layout.json\": " + std::to_string(layout_size) + ",\n"
       "    \"packed_experts/layer_00.bin\": 48,\n"
@@ -90,7 +96,7 @@ void test_parse_and_read(const fs::path& root) {
   require(reader.manifest().magic == "QPACK", "magic mismatch");
   require(reader.manifest().version == 1, "version mismatch");
   require(reader.manifest().quant_bits == 4, "quant bits mismatch");
-  require(reader.manifest().quant_group_size == 64, "quant group mismatch");
+  require(reader.manifest().quant_group_size == 8, "quant group mismatch");
 
   require(reader.layout().expert_count == 3, "expert count mismatch");
   require(reader.layout().layer_count == 2, "layer count mismatch");
@@ -136,6 +142,18 @@ void test_rejects_short_layer(const fs::path& root) {
   require(rejected, "short expert layer was accepted");
 }
 
+void test_rejects_quant_shape_mismatch(const fs::path& root) {
+  make_container(root, "QPACK", 64);
+
+  bool rejected = false;
+  try {
+    const QpackReader ignored(root);
+  } catch (const std::runtime_error&) {
+    rejected = true;
+  }
+  require(rejected, "quantization/packed-shape mismatch was accepted");
+}
+
 void test_bounds(const fs::path& root) {
   const QpackReader reader(make_container(root));
 
@@ -175,6 +193,7 @@ int main() {
     test_parse_and_read(base / "parse");
     test_rejects_bad_magic(base / "bad-magic");
     test_rejects_short_layer(base / "short-layer");
+    test_rejects_quant_shape_mismatch(base / "bad-quant");
     test_bounds(base / "bounds");
     fs::remove_all(base);
     std::cout << "OSM-02 qpack compatibility: PASS\n";
