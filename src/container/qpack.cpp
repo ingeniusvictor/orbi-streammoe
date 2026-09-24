@@ -131,6 +131,42 @@ void validate_declared_file(
   }
 }
 
+void validate_expert_quantization(
+    const QpackManifest& manifest,
+    const QpackLayout& layout) {
+  if (!manifest.quant_bits || !manifest.quant_group_size) {
+    return;
+  }
+
+  const auto bits = *manifest.quant_bits;
+  const auto group = *manifest.quant_group_size;
+  if (bits == 0 || group == 0 || (32U % bits) != 0U) {
+    throw std::runtime_error("qpack: invalid expert quantization metadata");
+  }
+
+  for (const std::string prefix : {"gate_proj", "up_proj", "down_proj"}) {
+    const auto* weight = layout.find_section(prefix + ".weight");
+    const auto* scales = layout.find_section(prefix + ".scales");
+    if (weight == nullptr || scales == nullptr) {
+      continue;
+    }
+    if (weight->shape.empty() || scales->shape.empty()) {
+      throw std::runtime_error(
+          "qpack: quantized expert section has empty shape: " + prefix);
+    }
+
+    const auto packed_words = static_cast<std::uint64_t>(weight->shape.back());
+    const auto scale_groups = static_cast<std::uint64_t>(scales->shape.back());
+    const auto logical_from_weight = packed_words * (32U / bits);
+    const auto logical_from_scales = scale_groups * group;
+
+    if (logical_from_weight == 0 || logical_from_weight != logical_from_scales) {
+      throw std::runtime_error(
+          "qpack: expert quantization disagrees with packed shapes: " + prefix);
+    }
+  }
+}
+
 }  // namespace
 
 const QpackSection* QpackLayout::find_section(std::string_view name) const noexcept {
@@ -186,6 +222,12 @@ void QpackReader::validate_container() const {
     }
   }
 
+  if (manifest_.quant_bits.has_value() != manifest_.quant_group_size.has_value()) {
+    throw std::runtime_error(
+        "qpack: quantBits and quantGroupSize must both be present or both be null");
+  }
+  validate_expert_quantization(manifest_, layout_);
+
   const auto expected_layer_bytes = checked_layer_bytes(layout_);
 
   validate_declared_file(
@@ -210,11 +252,6 @@ void QpackReader::validate_container() const {
     const auto relative =
         std::filesystem::relative(path, container_dir_).generic_string();
     validate_declared_file(container_dir_, manifest_, relative, true);
-  }
-
-  if (manifest_.quant_bits.has_value() != manifest_.quant_group_size.has_value()) {
-    throw std::runtime_error(
-        "qpack: quantBits and quantGroupSize must both be present or both be null");
   }
 }
 
