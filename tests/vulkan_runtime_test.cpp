@@ -74,9 +74,7 @@ int main() {
           << "  device=" << device.name
           << " vendor=" << device.vendor_id
           << " device=" << device.device_id
-          << " api=" << VK_VERSION_MAJOR(device.api_version)
-          << "." << VK_VERSION_MINOR(device.api_version)
-          << "." << VK_VERSION_PATCH(device.api_version)
+          << " api_raw=" << device.api_version
           << " compute="
           << (device.compute_queue_family.has_value() ? "yes" : "no")
           << "\n";
