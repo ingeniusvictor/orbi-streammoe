@@ -1,0 +1,23 @@
+# Build output
+/build/
+/out/
+/cmake-build-*/
+
+# IDE
+/.vs/
+/.vscode/
+.idea/
+
+# CMake
+CMakeUserPresets.json
+
+# Models / large artifacts
+*.qpack
+*.gguf
+*.safetensors
+/models/
+/artifacts/
+
+# OS
+.DS_Store
+Thumbs.db
