@@ -17,3 +17,22 @@ Repository: https://github.com/nlohmann/json
 License: MIT
 
 Used to parse qpack manifest and layout JSON metadata.
+
+
+## Vulkan-Headers
+
+Vulkan API headers and registry by The Khronos Group Inc.  
+Repository: https://github.com/KhronosGroup/Vulkan-Headers  
+Compatibility pin: `v1.4.363`  
+Licensing: files are Apache-2.0 and/or MIT as declared by upstream.
+
+Used as the platform-neutral Vulkan API contract.
+
+## volk
+
+volk by Arseny Kapoulkine / contributors  
+Repository: https://github.com/zeux/volk  
+Compatibility pin: `vulkan-sdk-1.4.363`  
+License: MIT
+
+Used to dynamically load Vulkan entry points on Windows, Linux and Android without a hard link-time Vulkan-loader dependency.
