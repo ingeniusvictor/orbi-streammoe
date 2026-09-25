@@ -72,9 +72,25 @@ std::vector<float> QpackDenseReader::read_floats(
   return safetensors_.read_floats(resolve(name));
 }
 
+std::vector<float> QpackDenseReader::read_floats(
+    std::string_view name,
+    std::size_t element_offset,
+    std::size_t element_count) const {
+  return safetensors_.read_floats(
+      resolve(name), element_offset, element_count);
+}
+
 std::vector<std::uint32_t> QpackDenseReader::read_u32(
     std::string_view name) const {
   return safetensors_.read_u32(resolve(name));
+}
+
+std::vector<std::uint32_t> QpackDenseReader::read_u32(
+    std::string_view name,
+    std::size_t element_offset,
+    std::size_t element_count) const {
+  return safetensors_.read_u32(
+      resolve(name), element_offset, element_count);
 }
 
 }  // namespace orbi::streammoe
