@@ -39,6 +39,21 @@ jobs:
             include/orbi/streammoe/generated/rmsnorm_spv.hpp \
             /tmp/orbi-shaders/rmsnorm_spv.hpp
 
+      - name: Generate Q4 dequant SPIR-V preview
+        if: runner.os == 'Linux'
+        run: |
+          mkdir -p /tmp/orbi-shaders
+          glslangValidator -V --target-env vulkan1.0 \
+            -o /tmp/orbi-shaders/q4_dequant.comp.spv \
+            shaders/q4_dequant.comp
+          python3 scripts/embed_spirv.py \
+            /tmp/orbi-shaders/q4_dequant.comp.spv \
+            /tmp/orbi-shaders/q4_dequant_spv.hpp \
+            --symbol kQ4DequantSpirv
+          echo ORBI_Q4_DEQUANT_HEADER_BEGIN
+          cat /tmp/orbi-shaders/q4_dequant_spv.hpp
+          echo ORBI_Q4_DEQUANT_HEADER_END
+
       - name: Configure
         run: cmake -S . -B build -DORBI_STREAMMOE_BUILD_TESTS=ON
 
