@@ -13,6 +13,8 @@ namespace orbi::streammoe {
 
 struct Qwen3NextDenseConfig {
   std::size_t hidden_size{};
+  std::size_t vocab_size{};
+  bool tie_word_embeddings{};
   std::size_t num_hidden_layers{};
   std::size_t full_attention_interval{};
 
