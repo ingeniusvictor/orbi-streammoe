@@ -18,6 +18,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Install Linux Vulkan software driver
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y mesa-vulkan-drivers vulkan-tools
+
       - name: Configure
         run: cmake -S . -B build -DORBI_STREAMMOE_BUILD_TESTS=ON
 
@@ -26,3 +32,11 @@ jobs:
 
       - name: Test
         run: ctest --test-dir build -C Release --output-on-failure
+
+      - name: Verify real Vulkan compute execution
+        if: runner.os == 'Linux'
+        env:
+          ORBI_REQUIRE_VULKAN_COMPUTE: 1
+        run: |
+          vulkaninfo --summary
+          ctest --test-dir build -C Release -R orbi_streammoe_vulkan_compute_roundtrip_tests --output-on-failure -V
