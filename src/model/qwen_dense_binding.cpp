@@ -157,6 +157,8 @@ Qwen3NextDenseConfig parse_qwen3_next_dense_config(
 
   Qwen3NextDenseConfig config{
       .hidden_size = required_size(root, "hidden_size"),
+      .vocab_size = root.value("vocab_size", std::size_t{0U}),
+      .tie_word_embeddings = root.value("tie_word_embeddings", false),
       .num_hidden_layers =
           required_size(root, "num_hidden_layers"),
       .full_attention_interval =
