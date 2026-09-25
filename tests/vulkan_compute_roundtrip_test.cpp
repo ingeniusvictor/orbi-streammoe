@@ -1,3 +1,4 @@
+#include <cstdlib>
 #include <cstdint>
 #include <iostream>
 #include <stdexcept>
@@ -14,6 +15,11 @@ void require(bool condition, const std::string& message) {
   if (!condition) throw std::runtime_error(message);
 }
 
+bool require_vulkan_compute() {
+  const char* value = std::getenv("ORBI_REQUIRE_VULKAN_COMPUTE");
+  return value != nullptr && std::string(value) != "0";
+}
+
 }  // namespace
 
 int main() {
@@ -22,6 +28,12 @@ int main() {
     auto context = VulkanComputeContext::create(&context_diagnostic);
 
     if (!context.has_value()) {
+      if (require_vulkan_compute()) {
+        throw std::runtime_error(
+            "ORBI_REQUIRE_VULKAN_COMPUTE=1 but no Vulkan compute context was created: " +
+            context_diagnostic);
+      }
+
       std::cout
           << "OSM-09 Vulkan compute round-trip: PASS (no compute device on host)\n"
           << context_diagnostic << "\n";
