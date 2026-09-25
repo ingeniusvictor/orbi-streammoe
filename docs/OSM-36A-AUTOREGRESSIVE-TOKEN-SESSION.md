@@ -1,6 +1,6 @@
 # OSM-36A — autoregressive token-ID session
 
-Status: **IMPLEMENTED / STACKED CI CERTIFICATION PENDING**
+Status: **IMPLEMENTED / CLEAN-BASE CI CERTIFICATION PENDING**
 
 ## Goal
 
@@ -78,6 +78,10 @@ OSM-36A is GREEN when CI proves:
 - invalid prompt token, invalid stop token, empty prompt and zero limits fail
   without corrupting runtime state;
 - Linux CI reruns the session test with real Vulkan required.
+
+## Clean-base certification
+
+This candidate is rebuilt directly on OSM-35C canonical `main`; the PR CI therefore certifies only the OSM-36A session delta.
 
 ## Next
 
