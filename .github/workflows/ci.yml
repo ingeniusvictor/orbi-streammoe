@@ -22,7 +22,17 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y mesa-vulkan-drivers vulkan-tools
+          sudo apt-get install -y mesa-vulkan-drivers vulkan-tools glslang-tools
+
+      - name: Generate RMSNorm SPIR-V preview
+        if: runner.os == 'Linux'
+        run: |
+          mkdir -p /tmp/orbi-shaders
+          glslangValidator -V --target-env vulkan1.0             -o /tmp/orbi-shaders/rmsnorm.comp.spv             shaders/rmsnorm.comp
+          python3 scripts/embed_spirv.py             /tmp/orbi-shaders/rmsnorm.comp.spv             /tmp/orbi-shaders/rmsnorm_spv.hpp             --symbol kRmsNormSpirv
+          echo ORBI_RMSNORM_HEADER_BEGIN
+          cat /tmp/orbi-shaders/rmsnorm_spv.hpp
+          echo ORBI_RMSNORM_HEADER_END
 
       - name: Configure
         run: cmake -S . -B build -DORBI_STREAMMOE_BUILD_TESTS=ON
