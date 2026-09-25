@@ -5,7 +5,7 @@
 #include <utility>
 
 #include "orbi/streammoe/backend/vulkan_qpack_expert.hpp"
-#include "orbi/streammoe/cpu/reference_ops.hpp"
+#include "orbi/streammoe/backend/vulkan_swiglu.hpp"
 
 namespace orbi::streammoe {
 
@@ -68,11 +68,16 @@ VulkanQpackExpertMlpResult run_vulkan_qpack_q4_expert_mlp(
       return result;
     }
 
-    auto hidden = gate.values;
-    cpu::swiglu_inplace(hidden, up.values);
+    const auto hidden = run_vulkan_swiglu(
+        context, gate.values, up.values);
+    if (!hidden.executed) {
+      result.diagnostic =
+          "qpack expert MLP SwiGLU failed: " + hidden.diagnostic;
+      return result;
+    }
 
     const auto down = run_vulkan_qpack_q4_projection(
-        context, reader, entry, "down_proj", hidden);
+        context, reader, entry, "down_proj", hidden.values);
     if (!down.executed) {
       result.diagnostic =
           "qpack expert MLP down projection failed: " + down.diagnostic;
@@ -88,7 +93,7 @@ VulkanQpackExpertMlpResult run_vulkan_qpack_q4_expert_mlp(
     result.executed = true;
     result.values = down.values;
     result.diagnostic =
-        "Complete streamed Q4 expert MLP executed (gate/up/down + SwiGLU).";
+        "Complete streamed Q4 expert MLP executed fully through Vulkan math (gate/up/SwiGLU/down).";
     return result;
   } catch (const std::exception& e) {
     result.diagnostic =
