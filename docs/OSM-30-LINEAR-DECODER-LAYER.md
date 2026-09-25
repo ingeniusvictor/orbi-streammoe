@@ -1,6 +1,6 @@
 # OSM-30 — complete checkpoint-bound linear decoder layer
 
-Status: **IMPLEMENTED / CERTIFICATION PENDING**
+Status: **IMPLEMENTED / CLEAN CI CERTIFICATION PENDING**
 
 ## Goal
 
@@ -98,3 +98,10 @@ Two major tracks become possible after OSM-30:
 
 Only after both DeltaNet and GQA decoder branches exist should a multi-layer
 Qwen3-Next model runtime be considered complete.
+
+
+## Clean-base certification
+
+After OSM-29C was squash-merged, this branch was rebuilt directly from the new
+canonical `main`. The final CI run therefore validates only the OSM-30
+complete-layer delta rather than inherited stacked commits.
