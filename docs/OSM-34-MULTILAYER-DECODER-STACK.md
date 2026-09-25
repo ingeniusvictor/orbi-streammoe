@@ -1,6 +1,6 @@
 # OSM-34 — multi-layer alternating decoder stack
 
-Status: **IMPLEMENTED / CERTIFICATION PENDING**
+Status: **IMPLEMENTED / CLEAN CI CERTIFICATION PENDING**
 
 ## Goal
 
@@ -89,3 +89,10 @@ token ids
 ```
 
 That is the bridge from a decoder engine to an actual autoregressive model.
+
+
+## Clean-base certification
+
+After OSM-33 was squash-merged, this branch was rebuilt directly from the new
+canonical `main`. The final CI run therefore validates only the OSM-34
+multi-layer decoder-stack delta.
