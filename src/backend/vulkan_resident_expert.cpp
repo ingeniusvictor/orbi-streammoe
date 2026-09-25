@@ -283,10 +283,10 @@ std::uintptr_t VulkanResidentExpert::native_device() const noexcept {
   return impl_ != nullptr ? impl_->device : 0U;
 }
 
-VulkanResidentExpertResult VulkanResidentExpert::run(
+VulkanBufferDispatchResult VulkanResidentExpert::run_from_buffer(
     VulkanComputeContext& context,
-    std::span<const float> x) noexcept {
-  VulkanResidentExpertResult result;
+    const VulkanFloatBuffer& x) noexcept {
+  VulkanBufferDispatchResult result;
 
   if (!valid()) {
     result.diagnostic = "resident expert is not valid";
@@ -296,22 +296,19 @@ VulkanResidentExpertResult VulkanResidentExpert::run(
     result.diagnostic = "resident expert belongs to a different Vulkan device";
     return result;
   }
-  if (x.size() != impl_->input_dim) {
-    result.diagnostic = "resident expert input size mismatch";
+  if (!x.valid() ||
+      x.native_device() != impl_->device ||
+      x.size() != impl_->input_dim) {
+    result.diagnostic =
+        "resident expert input Vulkan buffer is invalid or has wrong shape/device";
     return result;
   }
 
   try {
-    std::string diagnostic;
-    if (!impl_->input->upload(x, &diagnostic)) {
-      result.diagnostic = "resident expert input upload failed: " + diagnostic;
-      return result;
-    }
-
     const auto gate = run_vulkan_q4_gemv_preloaded(
         context,
         *impl_->gate_weights,
-        *impl_->input,
+        x,
         *impl_->gate);
     if (!gate.executed) {
       result.diagnostic =
@@ -322,7 +319,7 @@ VulkanResidentExpertResult VulkanResidentExpert::run(
     const auto up = run_vulkan_q4_gemv_preloaded(
         context,
         *impl_->up_weights,
-        *impl_->input,
+        x,
         *impl_->up);
     if (!up.executed) {
       result.diagnostic =
@@ -352,6 +349,59 @@ VulkanResidentExpertResult VulkanResidentExpert::run(
       return result;
     }
 
+    result.executed = true;
+    result.diagnostic =
+        "Vulkan resident expert output remains in reusable device buffer.";
+    return result;
+  } catch (const std::exception& e) {
+    result.diagnostic =
+        std::string("resident expert buffer execution exception: ") + e.what();
+    return result;
+  } catch (...) {
+    result.diagnostic =
+        "resident expert buffer execution encountered an unknown exception";
+    return result;
+  }
+}
+
+const VulkanFloatBuffer* VulkanResidentExpert::output_buffer() const noexcept {
+  if (!valid()) return nullptr;
+  return &*impl_->output;
+}
+
+VulkanResidentExpertResult VulkanResidentExpert::run(
+    VulkanComputeContext& context,
+    std::span<const float> x) noexcept {
+  VulkanResidentExpertResult result;
+
+  if (!valid()) {
+    result.diagnostic = "resident expert is not valid";
+    return result;
+  }
+  if (!context.valid() || context.native_device() != impl_->device) {
+    result.diagnostic = "resident expert belongs to a different Vulkan device";
+    return result;
+  }
+  if (x.size() != impl_->input_dim) {
+    result.diagnostic = "resident expert input size mismatch";
+    return result;
+  }
+
+  try {
+    std::string diagnostic;
+    if (!impl_->input->upload(x, &diagnostic)) {
+      result.diagnostic =
+          "resident expert input upload failed: " + diagnostic;
+      return result;
+    }
+
+    const auto dispatch =
+        run_from_buffer(context, *impl_->input);
+    if (!dispatch.executed) {
+      result.diagnostic = dispatch.diagnostic;
+      return result;
+    }
+
     const auto values = impl_->output->download(&diagnostic);
     if (!values.has_value()) {
       result.diagnostic =
@@ -362,7 +412,7 @@ VulkanResidentExpertResult VulkanResidentExpert::run(
     result.executed = true;
     result.values = *values;
     result.diagnostic =
-        "Vulkan resident expert executed without re-uploading expert weights.";
+        "Vulkan resident expert executed through reusable buffer path.";
     return result;
   } catch (const std::exception& e) {
     result.diagnostic =
