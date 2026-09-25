@@ -1,6 +1,6 @@
 # OSM-31B — checkpoint-bound gated GQA
 
-Status: **IMPLEMENTED / CERTIFICATION PENDING**
+Status: **IMPLEMENTED / CLEAN CI CERTIFICATION PENDING**
 
 ## Goal
 
@@ -58,3 +58,10 @@ Compose:
 
 from exact checkpoint tensors, mirroring OSM-29C for the 12 full-attention
 layers.
+
+
+## Clean-base certification
+
+After OSM-31A was squash-merged, this branch was rebuilt directly from the new
+canonical `main`. The final CI run therefore validates only the OSM-31B
+checkpoint-GQA delta.
