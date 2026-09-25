@@ -1,0 +1,34 @@
+#version 450
+
+layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
+
+layout(std430, set = 0, binding = 0) buffer ValuesBuffer {
+    float values[];
+};
+
+layout(std430, set = 0, binding = 1) readonly buffer WeightBuffer {
+    float weights[];
+};
+
+layout(push_constant) uniform Params {
+    uint dim;
+    float eps;
+} params;
+
+void main() {
+    uint row = gl_GlobalInvocationID.x;
+    uint base = row * params.dim;
+
+    float sum_sq = 0.0;
+    for (uint i = 0; i < params.dim; ++i) {
+        float v = values[base + i];
+        sum_sq += v * v;
+    }
+
+    float scale = inversesqrt(sum_sq / float(params.dim) + params.eps);
+
+    for (uint i = 0; i < params.dim; ++i) {
+        uint index = base + i;
+        values[index] = values[index] * scale * weights[i];
+    }
+}
