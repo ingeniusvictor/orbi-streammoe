@@ -1,5 +1,6 @@
 #include "orbi/streammoe/model/qwen_dense_binding.hpp"
 
+#include <cmath>
 #include <fstream>
 #include <stdexcept>
 #include <string>
@@ -165,6 +166,14 @@ Qwen3NextDenseConfig parse_qwen3_next_dense_config(
       .num_key_value_heads =
           required_size(root, "num_key_value_heads"),
       .head_dim = required_size(root, "head_dim"),
+      .partial_rotary_factor =
+          root.value("partial_rotary_factor", 0.25F),
+      .rope_theta =
+          root.value("rope_theta", 10000000.0F),
+      .rms_norm_eps =
+          root.value("rms_norm_eps", 1e-6F),
+      .max_position_embeddings =
+          root.value("max_position_embeddings", std::size_t{262144U}),
       .linear_num_value_heads =
           required_size(root, "linear_num_value_heads"),
       .linear_num_key_heads =
@@ -184,6 +193,24 @@ Qwen3NextDenseConfig parse_qwen3_next_dense_config(
           required_size(root, "shared_expert_intermediate_size"),
       .norm_topk_prob = root.value("norm_topk_prob", false),
   };
+
+  if (!std::isfinite(config.partial_rotary_factor) ||
+      config.partial_rotary_factor < 0.0F ||
+      config.partial_rotary_factor > 1.0F ||
+      !std::isfinite(config.rope_theta) ||
+      !(config.rope_theta > 0.0F) ||
+      !std::isfinite(config.rms_norm_eps) ||
+      config.rms_norm_eps < 0.0F ||
+      config.max_position_embeddings == 0U ||
+      config.rotary_dims() > config.head_dim ||
+      (config.rotary_dims() % 2U) != 0U) {
+    throw std::runtime_error(
+        "qwen dense binding: invalid GQA RoPE/context configuration");
+  }
+  if (config.num_attention_heads % config.num_key_value_heads != 0U) {
+    throw std::runtime_error(
+        "qwen dense binding: attention heads must divide by KV heads");
+  }
 
   if (config.num_experts_per_tok > config.num_experts) {
     throw std::runtime_error(
