@@ -25,6 +25,7 @@ struct ArchConfig {
   std::size_t expert_top_k{};
   std::size_t moe_intermediate_size{};
   std::size_t shared_expert_intermediate_size{};
+  bool norm_topk_prob{};
 
   [[nodiscard]] constexpr std::size_t full_attention_layer_count() const noexcept {
     return layer_count / full_attention_interval;
@@ -60,10 +61,12 @@ inline constexpr ArchConfig kQwen3Next80BA3B{
     .expert_top_k = 10,
     .moe_intermediate_size = 512,
     .shared_expert_intermediate_size = 512,
+    .norm_topk_prob = true,
 };
 
 static_assert(kQwen3Next80BA3B.full_attention_layer_count() == 12);
 static_assert(kQwen3Next80BA3B.linear_layer_count() == 36);
 static_assert(kQwen3Next80BA3B.routed_fetches_per_token() == 480);
+static_assert(kQwen3Next80BA3B.norm_topk_prob);
 
 }  // namespace orbi::streammoe
