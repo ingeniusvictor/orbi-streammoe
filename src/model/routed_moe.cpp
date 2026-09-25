@@ -250,4 +250,184 @@ RoutedMoeResult run_weighted_routed_moe_vulkan_accum(
   }
 }
 
+
+QwenSparseMoeResult run_qwen_sparse_moe_vulkan_accum(
+    VulkanComputeContext& context,
+    VulkanResidentExpertCache& expert_cache,
+    VulkanResidentSharedExpert& shared_expert,
+    std::uint32_t layer,
+    std::span<const float> hidden,
+    std::span<const float> router_weight,
+    QwenRouterConfig router_config) noexcept {
+  QwenSparseMoeResult result;
+
+  if (!context.valid()) {
+    result.diagnostic =
+        "Qwen sparse MoE requires a valid Vulkan context";
+    return result;
+  }
+  if (!shared_expert.valid() ||
+      shared_expert.native_device() != context.native_device()) {
+    result.diagnostic =
+        "Qwen sparse MoE shared expert is invalid or belongs to another device";
+    return result;
+  }
+  if (shared_expert.input_dim() != hidden.size() ||
+      shared_expert.output_dim() != hidden.size()) {
+    result.diagnostic =
+        "Qwen sparse MoE shared expert geometry does not match hidden size";
+    return result;
+  }
+
+  try {
+    result.routing =
+        route_qwen_top_k_cpu(hidden, router_weight, router_config);
+    if (result.routing.picks.empty()) {
+      result.diagnostic = "Qwen sparse MoE selected no routed experts";
+      return result;
+    }
+
+    std::string diagnostic;
+    auto shared_input =
+        VulkanFloatBuffer::create(context, hidden.size(), &diagnostic);
+    if (!shared_input.has_value()) {
+      result.diagnostic =
+          "Qwen sparse MoE hidden-buffer allocation failed: " + diagnostic;
+      return result;
+    }
+    if (!shared_input->upload(hidden, &diagnostic)) {
+      result.diagnostic =
+          "Qwen sparse MoE hidden upload failed: " + diagnostic;
+      return result;
+    }
+
+    auto accumulator =
+        VulkanFloatBuffer::create(
+            context, shared_expert.output_dim(), &diagnostic);
+    if (!accumulator.has_value()) {
+      result.diagnostic =
+          "Qwen sparse MoE accumulator allocation failed: " + diagnostic;
+      return result;
+    }
+
+    std::vector<float> zeros(shared_expert.output_dim(), 0.0F);
+    if (!accumulator->upload(zeros, &diagnostic)) {
+      result.diagnostic =
+          "Qwen sparse MoE accumulator zeroing failed: " + diagnostic;
+      return result;
+    }
+
+    for (const auto& pick : result.routing.picks) {
+      if (!std::isfinite(pick.weight)) {
+        result.diagnostic =
+            "Qwen sparse MoE encountered non-finite routing weight";
+        return result;
+      }
+
+      auto* resident =
+          expert_cache.get(layer, pick.expert, &diagnostic);
+      if (resident == nullptr) {
+        result.diagnostic =
+            "Qwen sparse MoE routed expert " +
+            std::to_string(pick.expert) +
+            " load failed: " + diagnostic;
+        return result;
+      }
+
+      if (resident->input_dim() != shared_input->size() ||
+          resident->output_dim() != accumulator->size()) {
+        result.diagnostic =
+            "Qwen sparse MoE routed expert geometry mismatch";
+        return result;
+      }
+
+      const auto dispatch =
+          resident->run_from_buffer(context, *shared_input);
+      if (!dispatch.executed) {
+        result.diagnostic =
+            "Qwen sparse MoE routed expert " +
+            std::to_string(pick.expert) +
+            " execution failed: " + dispatch.diagnostic;
+        return result;
+      }
+
+      const auto* output = resident->output_buffer();
+      if (output == nullptr) {
+        result.diagnostic =
+            "Qwen sparse MoE routed expert exposed no output buffer";
+        return result;
+      }
+
+      const auto accumulate =
+          run_vulkan_weighted_accumulate(
+              context, *output, pick.weight, *accumulator);
+      if (!accumulate.executed) {
+        result.diagnostic =
+            "Qwen sparse MoE routed accumulation failed: " +
+            accumulate.diagnostic;
+        return result;
+      }
+    }
+
+    const auto shared_dispatch =
+        shared_expert.run_from_buffer(context, *shared_input);
+    if (!shared_dispatch.executed) {
+      result.diagnostic =
+          "Qwen sparse MoE shared expert execution failed: " +
+          shared_dispatch.diagnostic;
+      return result;
+    }
+
+    const auto shared_scale =
+        shared_expert.scalar_scale(hidden, &diagnostic);
+    if (!shared_scale.has_value()) {
+      result.diagnostic =
+          "Qwen sparse MoE shared scalar gate failed: " + diagnostic;
+      return result;
+    }
+
+    const auto* shared_output = shared_expert.output_buffer();
+    if (shared_output == nullptr) {
+      result.diagnostic =
+          "Qwen sparse MoE shared expert exposed no output buffer";
+      return result;
+    }
+
+    const auto shared_accumulate =
+        run_vulkan_weighted_accumulate(
+            context, *shared_output, *shared_scale, *accumulator);
+    if (!shared_accumulate.executed) {
+      result.diagnostic =
+          "Qwen sparse MoE shared accumulation failed: " +
+          shared_accumulate.diagnostic;
+      return result;
+    }
+
+    const auto values = accumulator->download(&diagnostic);
+    if (!values.has_value()) {
+      result.diagnostic =
+          "Qwen sparse MoE final output download failed: " + diagnostic;
+      return result;
+    }
+
+    result.executed = true;
+    result.shared_gate = *shared_scale;
+    result.values = *values;
+    result.diagnostic =
+        "Qwen sparse MoE combined routed and shared experts in one Vulkan accumulator.";
+    return result;
+  } catch (const std::exception& e) {
+    result.diagnostic =
+        std::string("Qwen sparse MoE Vulkan exception: ") + e.what();
+    result.values.clear();
+    return result;
+  } catch (...) {
+    result.diagnostic =
+        "Qwen sparse MoE Vulkan execution encountered an unknown exception";
+    result.values.clear();
+    return result;
+  }
+}
+
+
 }  // namespace orbi::streammoe

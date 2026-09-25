@@ -131,3 +131,4 @@ jobs:
           ctest --test-dir build -C Release -R orbi_streammoe_vulkan_resident_expert_cache_tests --output-on-failure -V
           ctest --test-dir build -C Release -R orbi_streammoe_weighted_routed_moe_tests --output-on-failure -V
           ctest --test-dir build -C Release -R orbi_streammoe_vulkan_routed_moe_accumulate_tests --output-on-failure -V
+          ctest --test-dir build -C Release -R orbi_streammoe_vulkan_shared_expert_tests --output-on-failure -V
