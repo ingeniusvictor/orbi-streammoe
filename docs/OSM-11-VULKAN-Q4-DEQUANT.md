@@ -1,6 +1,6 @@
 # OSM-11 — Vulkan affine Q4 dequantization
 
-Status: **IMPLEMENTATION IN PROGRESS**
+Status: **IMPLEMENTED / CERTIFICATION PENDING**
 
 ## Goal
 
@@ -48,6 +48,31 @@ Qwen expert weights are stored quantized on disk. ORBI StreamMoE must be able
 to consume those bytes without materializing a full dequantized model in RAM.
 This gate proves the byte-level quantization semantics before combining
 dequantization with GEMV.
+
+## Certification
+
+The test uses a Qwen-representative group size of 64 with 2 rows x 128 logical
+columns. Packed nibbles cover the full 0..15 range through non-trivial patterns,
+and scales/biases vary by row and group.
+
+The Vulkan output is compared element-by-element to
+`cpu::dequantize_affine_rows` with an absolute tolerance of `1e-6`.
+Linux CI requires a real Vulkan compute context through Mesa llvmpipe when no
+hardware GPU is exposed.
+
+This correctness gate uses float32 scale/bias buffers. Native F16/BF16 qpack
+scale loading belongs in the fused GEMV path, where avoiding intermediate
+dequantized weights matters.
+
+## Exit gate
+
+OSM-11 is GREEN when:
+
+- pinned Q4 SPIR-V exactly matches the GLSL source;
+- Windows and Linux builds/tests pass;
+- Linux executes the Q4 shader through Vulkan;
+- GPU output matches the CPU affine-Q4 oracle;
+- invalid group geometry is rejected before dispatch.
 
 ## Next
 
