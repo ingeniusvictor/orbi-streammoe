@@ -255,6 +255,30 @@ std::size_t VulkanResidentExpert::packed_weight_bytes() const noexcept {
          impl_->down_weights->packed_size_bytes();
 }
 
+std::size_t VulkanResidentExpert::accounted_bytes() const noexcept {
+  if (!valid()) return 0U;
+
+  const auto projection_bytes = [](const VulkanQ4ProjectionWeights& weights) {
+    return weights.packed_size_bytes() +
+           weights.scales_buffer().size_bytes() +
+           weights.biases_buffer().size_bytes();
+  };
+
+  const auto weight_bytes =
+      projection_bytes(*impl_->gate_weights) +
+      projection_bytes(*impl_->up_weights) +
+      projection_bytes(*impl_->down_weights);
+
+  const auto activation_bytes =
+      impl_->input->size_bytes() +
+      impl_->gate->size_bytes() +
+      impl_->up->size_bytes() +
+      impl_->hidden->size_bytes() +
+      impl_->output->size_bytes();
+
+  return weight_bytes + activation_bytes;
+}
+
 std::uintptr_t VulkanResidentExpert::native_device() const noexcept {
   return impl_ != nullptr ? impl_->device : 0U;
 }
