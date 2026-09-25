@@ -59,6 +59,7 @@ add_library(orbi_streammoe_core
   src/backend/vulkan_swiglu.cpp
   src/backend/vulkan_float_buffer.cpp
   src/backend/vulkan_q4_weights.cpp
+  src/backend/vulkan_resident_expert.cpp
 )
 
 if(WIN32)
@@ -193,6 +194,12 @@ if(ORBI_STREAMMOE_BUILD_TESTS)
   target_link_libraries(orbi_streammoe_vulkan_preloaded_q4_weights_tests PRIVATE orbi_streammoe_core)
   target_compile_features(orbi_streammoe_vulkan_preloaded_q4_weights_tests PRIVATE cxx_std_20)
 
+  add_executable(orbi_streammoe_vulkan_resident_expert_tests
+    tests/vulkan_resident_expert_test.cpp
+  )
+  target_link_libraries(orbi_streammoe_vulkan_resident_expert_tests PRIVATE orbi_streammoe_core)
+  target_compile_features(orbi_streammoe_vulkan_resident_expert_tests PRIVATE cxx_std_20)
+
   add_test(NAME orbi_streammoe_smoke COMMAND orbi_streammoe_smoke)
   add_test(NAME orbi_streammoe_qpack_tests COMMAND orbi_streammoe_qpack_tests)
   add_test(NAME orbi_streammoe_cpu_reference_tests COMMAND orbi_streammoe_cpu_reference_tests)
@@ -210,6 +217,7 @@ if(ORBI_STREAMMOE_BUILD_TESTS)
   add_test(NAME orbi_streammoe_vulkan_float_buffer_tests COMMAND orbi_streammoe_vulkan_float_buffer_tests)
   add_test(NAME orbi_streammoe_vulkan_persistent_ops_tests COMMAND orbi_streammoe_vulkan_persistent_ops_tests)
   add_test(NAME orbi_streammoe_vulkan_preloaded_q4_weights_tests COMMAND orbi_streammoe_vulkan_preloaded_q4_weights_tests)
+  add_test(NAME orbi_streammoe_vulkan_resident_expert_tests COMMAND orbi_streammoe_vulkan_resident_expert_tests)
 
   if(WIN32)
     add_executable(orbi_streammoe_windows_io_tests
