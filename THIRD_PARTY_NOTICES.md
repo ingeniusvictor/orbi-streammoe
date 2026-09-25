@@ -36,3 +36,12 @@ Compatibility pin: `vulkan-sdk-1.4.363`
 License: MIT
 
 Used to dynamically load Vulkan entry points on Windows, Linux and Android without a hard link-time Vulkan-loader dependency.
+
+## glslang
+
+glslang by The Khronos Group Inc. / contributors  
+Repository: https://github.com/KhronosGroup/glslang  
+CI compiler version used for OSM-10 development: 16.6.x series  
+License: BSD-3-Clause-style license as declared by upstream
+
+Used only as a build/CI tool to compile human-readable GLSL correctness kernels to pinned SPIR-V. It is not linked into the ORBI StreamMoE runtime.
