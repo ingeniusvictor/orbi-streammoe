@@ -46,6 +46,7 @@ add_library(orbi_streammoe_core
   src/core/version.cpp
   src/container/qpack.cpp
   src/cpu/reference_ops.cpp
+  src/model/qwen_router.cpp
   src/cache/expert_cache.cpp
   src/storage/qpack_expert_storage.cpp
   src/backend/vulkan_runtime.cpp
@@ -116,6 +117,12 @@ if(ORBI_STREAMMOE_BUILD_TESTS)
   )
   target_link_libraries(orbi_streammoe_expert_cache_tests PRIVATE orbi_streammoe_core)
   target_compile_features(orbi_streammoe_expert_cache_tests PRIVATE cxx_std_20)
+
+  add_executable(orbi_streammoe_qwen_router_tests
+    tests/qwen_router_test.cpp
+  )
+  target_link_libraries(orbi_streammoe_qwen_router_tests PRIVATE orbi_streammoe_core)
+  target_compile_features(orbi_streammoe_qwen_router_tests PRIVATE cxx_std_20)
 
   add_executable(orbi_streammoe_vulkan_runtime_tests
     tests/vulkan_runtime_test.cpp
@@ -211,6 +218,7 @@ if(ORBI_STREAMMOE_BUILD_TESTS)
   add_test(NAME orbi_streammoe_qpack_tests COMMAND orbi_streammoe_qpack_tests)
   add_test(NAME orbi_streammoe_cpu_reference_tests COMMAND orbi_streammoe_cpu_reference_tests)
   add_test(NAME orbi_streammoe_expert_cache_tests COMMAND orbi_streammoe_expert_cache_tests)
+  add_test(NAME orbi_streammoe_qwen_router_tests COMMAND orbi_streammoe_qwen_router_tests)
   add_test(NAME orbi_streammoe_vulkan_runtime_tests COMMAND orbi_streammoe_vulkan_runtime_tests)
   add_test(NAME orbi_streammoe_vulkan_compute_context_tests COMMAND orbi_streammoe_vulkan_compute_context_tests)
   add_test(NAME orbi_streammoe_vulkan_compute_roundtrip_tests COMMAND orbi_streammoe_vulkan_compute_roundtrip_tests)
