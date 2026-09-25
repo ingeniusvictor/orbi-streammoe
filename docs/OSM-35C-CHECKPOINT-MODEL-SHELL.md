@@ -1,6 +1,6 @@
 # OSM-35C — end-to-end checkpoint model shell
 
-Status: **IMPLEMENTED / STACKED CI CERTIFICATION PENDING**
+Status: **IMPLEMENTED / CLEAN-BASE CI CERTIFICATION PENDING**
 
 ## Goal
 
@@ -67,6 +67,10 @@ proves:
 - reset reproduces a fresh first-token result;
 - invalid token IDs and zero LM-head chunk size fail safely;
 - Linux CI exercises the Vulkan stages with real Vulkan.
+
+## Clean-base certification
+
+This candidate is rebuilt directly on the OSM-35B canonical `main`. The PR CI therefore certifies only the OSM-35C model-shell delta.
 
 ## Next
 
