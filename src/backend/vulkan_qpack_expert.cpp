@@ -1,5 +1,8 @@
 #include "orbi/streammoe/backend/vulkan_qpack_expert.hpp"
 
+#include <bit>
+#include <cstddef>
+#include <cstdint>
 #include <cstring>
 #include <limits>
 #include <stdexcept>
@@ -47,6 +50,99 @@ std::size_t product(std::span<const std::size_t> shape) {
   return value;
 }
 
+float bf16_to_float(std::uint16_t value) noexcept {
+  return std::bit_cast<float>(static_cast<std::uint32_t>(value) << 16U);
+}
+
+float f16_to_float(std::uint16_t value) noexcept {
+  const std::uint32_t sign =
+      (static_cast<std::uint32_t>(value & 0x8000U)) << 16U;
+  std::uint32_t exponent = (value >> 10U) & 0x1FU;
+  std::uint32_t mantissa = value & 0x03FFU;
+
+  std::uint32_t bits = 0;
+  if (exponent == 0U) {
+    if (mantissa == 0U) {
+      bits = sign;
+    } else {
+      int exponent_unbiased = -14;
+      while ((mantissa & 0x0400U) == 0U) {
+        mantissa <<= 1U;
+        --exponent_unbiased;
+      }
+      mantissa &= 0x03FFU;
+      const auto exponent32 =
+          static_cast<std::uint32_t>(exponent_unbiased + 127) << 23U;
+      bits = sign | exponent32 | (mantissa << 13U);
+    }
+  } else if (exponent == 0x1FU) {
+    bits = sign | 0x7F800000U | (mantissa << 13U);
+  } else {
+    const auto exponent32 = (exponent + (127U - 15U)) << 23U;
+    bits = sign | exponent32 | (mantissa << 13U);
+  }
+
+  return std::bit_cast<float>(bits);
+}
+
+std::vector<float> float_section(
+    std::span<const std::byte> bytes,
+    const QpackSection& section,
+    const char* label) {
+  const auto count = product(section.shape);
+
+  if (section.offset > bytes.size() ||
+      section.size > bytes.size() - section.offset) {
+    throw std::runtime_error(
+        std::string("qpack expert: ") + label + " section exceeds cache slot");
+  }
+
+  const auto* raw =
+      bytes.data() + static_cast<std::size_t>(section.offset);
+
+  std::vector<float> out;
+  out.resize(count);
+
+  if (section.dtype == "F32") {
+    const auto expected = count * sizeof(float);
+    if (section.size != expected) {
+      throw std::runtime_error(
+          std::string("qpack expert: F32 ") + label +
+          " byte size disagrees with shape");
+    }
+
+    for (std::size_t i = 0; i < count; ++i) {
+      std::uint32_t bits{};
+      std::memcpy(&bits, raw + i * sizeof(bits), sizeof(bits));
+      out[i] = std::bit_cast<float>(bits);
+    }
+    return out;
+  }
+
+  if (section.dtype == "F16" || section.dtype == "BF16") {
+    const auto expected = count * sizeof(std::uint16_t);
+    if (section.size != expected) {
+      throw std::runtime_error(
+          std::string("qpack expert: ") + section.dtype + " " + label +
+          " byte size disagrees with shape");
+    }
+
+    for (std::size_t i = 0; i < count; ++i) {
+      std::uint16_t bits{};
+      std::memcpy(&bits, raw + i * sizeof(bits), sizeof(bits));
+      out[i] =
+          section.dtype == "F16"
+              ? f16_to_float(bits)
+              : bf16_to_float(bits);
+    }
+    return out;
+  }
+
+  throw std::runtime_error(
+      std::string("qpack expert: unsupported ") + label +
+      " dtype " + section.dtype);
+}
+
 }  // namespace
 
 QpackExpertQ4View bind_qpack_q4_projection(
@@ -75,11 +171,16 @@ QpackExpertQ4View bind_qpack_q4_projection(
   if (weight->dtype != "U32") {
     throw std::runtime_error("qpack expert: Q4 weight dtype must be U32");
   }
-  // OSM-13 uses float32 metadata fixtures. Native BF16/F16 loading is the
-  // next compatibility step before a real production qpack pilot.
-  if (scales->dtype != "F32" || biases->dtype != "F32") {
+
+  if (scales->dtype != biases->dtype) {
     throw std::runtime_error(
-        "qpack expert: OSM-13 requires F32 scales/biases");
+        "qpack expert: scale/bias dtypes must match");
+  }
+  if (scales->dtype != "F32" &&
+      scales->dtype != "F16" &&
+      scales->dtype != "BF16") {
+    throw std::runtime_error(
+        "qpack expert: scale/bias dtype must be F32, F16, or BF16");
   }
 
   if (weight->shape.size() != 2U || scales->shape.size() != 2U ||
@@ -91,11 +192,17 @@ QpackExpertQ4View bind_qpack_q4_projection(
   const auto out_dim = weight->shape[0];
   const auto packed_cols = weight->shape[1];
   if (out_dim == 0U || packed_cols == 0U) {
-    throw std::runtime_error("qpack expert: projection dimensions must be non-zero");
+    throw std::runtime_error(
+        "qpack expert: projection dimensions must be non-zero");
   }
 
+  if (packed_cols > std::numeric_limits<std::size_t>::max() / 8U) {
+    throw std::runtime_error(
+        "qpack expert: packed projection dimension overflows");
+  }
   const auto logical_cols = packed_cols * 8U;
-  const auto group_size = static_cast<std::size_t>(*manifest.quant_group_size);
+  const auto group_size =
+      static_cast<std::size_t>(*manifest.quant_group_size);
   if ((logical_cols % group_size) != 0U) {
     throw std::runtime_error(
         "qpack expert: logical input dimension not divisible by group size");
@@ -111,25 +218,22 @@ QpackExpertQ4View bind_qpack_q4_projection(
 
   const auto packed = typed_section<std::uint32_t>(
       entry.bytes, *weight, "weight");
-  const auto scale_values = typed_section<float>(
-      entry.bytes, *scales, "scales");
-  const auto bias_values = typed_section<float>(
-      entry.bytes, *biases, "biases");
-
-  if (packed.size() != product(weight->shape) ||
-      scale_values.size() != product(scales->shape) ||
-      bias_values.size() != product(biases->shape)) {
+  if (packed.size() != product(weight->shape)) {
     throw std::runtime_error(
-        "qpack expert: section byte sizes disagree with declared shapes");
+        "qpack expert: weight byte size disagrees with declared shape");
   }
+
+  auto scale_values = float_section(entry.bytes, *scales, "scales");
+  auto bias_values = float_section(entry.bytes, *biases, "biases");
 
   return {
       .packed = packed,
-      .scales = scale_values,
-      .biases = bias_values,
+      .scales = std::move(scale_values),
+      .biases = std::move(bias_values),
       .out_dim = out_dim,
       .packed_cols = packed_cols,
       .group_size = group_size,
+      .metadata_dtype = scales->dtype,
   };
 }
 
@@ -140,7 +244,8 @@ VulkanQ4GemvResult run_vulkan_qpack_q4_projection(
     std::string_view projection,
     std::span<const float> x) noexcept {
   try {
-    const auto view = bind_qpack_q4_projection(reader, entry, projection);
+    const auto view =
+        bind_qpack_q4_projection(reader, entry, projection);
     return run_vulkan_q4_gemv(
         context,
         view.packed,
