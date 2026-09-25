@@ -2,12 +2,32 @@
 
 #include <exception>
 #include <string>
-#include <utility>
 
+#include "orbi/streammoe/backend/vulkan_float_buffer.hpp"
+#include "orbi/streammoe/backend/vulkan_q4_gemv.hpp"
 #include "orbi/streammoe/backend/vulkan_qpack_expert.hpp"
 #include "orbi/streammoe/backend/vulkan_swiglu.hpp"
 
 namespace orbi::streammoe {
+namespace {
+
+bool create_buffer(
+    VulkanComputeContext& context,
+    std::size_t size,
+    std::optional<VulkanFloatBuffer>& target,
+    std::string& diagnostic,
+    const char* label) {
+  target = VulkanFloatBuffer::create(context, size, &diagnostic);
+  if (!target.has_value()) {
+    diagnostic =
+        std::string("qpack expert MLP failed to create ") +
+        label + ": " + diagnostic;
+    return false;
+  }
+  return true;
+}
+
+}  // namespace
 
 VulkanQpackExpertMlpResult run_vulkan_qpack_q4_expert_mlp(
     VulkanComputeContext& context,
@@ -45,55 +65,103 @@ VulkanQpackExpertMlpResult run_vulkan_qpack_q4_expert_mlp(
       return result;
     }
 
-    const auto gate = run_vulkan_qpack_q4_projection(
-        context, reader, entry, "gate_proj", x);
+    std::string diagnostic;
+    std::optional<VulkanFloatBuffer> input_buffer;
+    std::optional<VulkanFloatBuffer> gate_buffer;
+    std::optional<VulkanFloatBuffer> up_buffer;
+    std::optional<VulkanFloatBuffer> hidden_buffer;
+    std::optional<VulkanFloatBuffer> output_buffer;
+
+    if (!create_buffer(
+            context, input_dim, input_buffer, diagnostic, "input buffer") ||
+        !create_buffer(
+            context, intermediate_dim, gate_buffer, diagnostic, "gate buffer") ||
+        !create_buffer(
+            context, intermediate_dim, up_buffer, diagnostic, "up buffer") ||
+        !create_buffer(
+            context, intermediate_dim, hidden_buffer, diagnostic, "hidden buffer") ||
+        !create_buffer(
+            context, down_view.out_dim, output_buffer, diagnostic, "output buffer")) {
+      result.diagnostic = diagnostic;
+      return result;
+    }
+
+    if (!input_buffer->upload(x, &diagnostic)) {
+      result.diagnostic =
+          "qpack expert MLP input upload failed: " + diagnostic;
+      return result;
+    }
+
+    const auto gate = run_vulkan_q4_gemv_buffers(
+        context,
+        gate_view.packed,
+        gate_view.out_dim,
+        gate_view.packed_cols,
+        gate_view.scales,
+        gate_view.biases,
+        gate_view.group_size,
+        *input_buffer,
+        *gate_buffer);
     if (!gate.executed) {
       result.diagnostic =
           "qpack expert MLP gate projection failed: " + gate.diagnostic;
       return result;
     }
 
-    const auto up = run_vulkan_qpack_q4_projection(
-        context, reader, entry, "up_proj", x);
+    const auto up = run_vulkan_q4_gemv_buffers(
+        context,
+        up_view.packed,
+        up_view.out_dim,
+        up_view.packed_cols,
+        up_view.scales,
+        up_view.biases,
+        up_view.group_size,
+        *input_buffer,
+        *up_buffer);
     if (!up.executed) {
       result.diagnostic =
           "qpack expert MLP up projection failed: " + up.diagnostic;
       return result;
     }
 
-    if (gate.values.size() != intermediate_dim ||
-        up.values.size() != intermediate_dim) {
-      result.diagnostic =
-          "qpack expert MLP gate/up result size mismatch.";
-      return result;
-    }
-
-    const auto hidden = run_vulkan_swiglu(
-        context, gate.values, up.values);
+    const auto hidden = run_vulkan_swiglu_buffers(
+        context,
+        *gate_buffer,
+        *up_buffer,
+        *hidden_buffer);
     if (!hidden.executed) {
       result.diagnostic =
           "qpack expert MLP SwiGLU failed: " + hidden.diagnostic;
       return result;
     }
 
-    const auto down = run_vulkan_qpack_q4_projection(
-        context, reader, entry, "down_proj", hidden.values);
+    const auto down = run_vulkan_q4_gemv_buffers(
+        context,
+        down_view.packed,
+        down_view.out_dim,
+        down_view.packed_cols,
+        down_view.scales,
+        down_view.biases,
+        down_view.group_size,
+        *hidden_buffer,
+        *output_buffer);
     if (!down.executed) {
       result.diagnostic =
           "qpack expert MLP down projection failed: " + down.diagnostic;
       return result;
     }
 
-    if (down.values.size() != down_view.out_dim) {
+    const auto output = output_buffer->download(&diagnostic);
+    if (!output.has_value()) {
       result.diagnostic =
-          "qpack expert MLP down result size mismatch.";
+          "qpack expert MLP final output download failed: " + diagnostic;
       return result;
     }
 
     result.executed = true;
-    result.values = down.values;
+    result.values = *output;
     result.diagnostic =
-        "Complete streamed Q4 expert MLP executed fully through Vulkan math (gate/up/SwiGLU/down).";
+        "Complete streamed Q4 expert MLP executed with persistent Vulkan activations and one final readback.";
     return result;
   } catch (const std::exception& e) {
     result.diagnostic =

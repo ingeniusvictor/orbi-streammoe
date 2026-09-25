@@ -108,3 +108,4 @@ jobs:
           ctest --test-dir build -C Release -R orbi_streammoe_vulkan_qpack_expert_mlp_tests --output-on-failure -V
           ctest --test-dir build -C Release -R orbi_streammoe_vulkan_swiglu_tests --output-on-failure -V
           ctest --test-dir build -C Release -R orbi_streammoe_vulkan_float_buffer_tests --output-on-failure -V
+          ctest --test-dir build -C Release -R orbi_streammoe_vulkan_persistent_ops_tests --output-on-failure -V

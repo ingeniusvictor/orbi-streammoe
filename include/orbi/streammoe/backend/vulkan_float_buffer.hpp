@@ -12,6 +12,11 @@
 
 namespace orbi::streammoe {
 
+struct VulkanBufferDispatchResult {
+  bool executed{};
+  std::string diagnostic;
+};
+
 /// Reusable host-visible Vulkan storage buffer for float activations.
 ///
 /// The VulkanComputeContext used at creation must outlive this buffer.
@@ -43,6 +48,7 @@ class VulkanFloatBuffer {
       std::string* diagnostic = nullptr) const noexcept;
 
   [[nodiscard]] std::uintptr_t native_buffer() const noexcept;
+  [[nodiscard]] std::uintptr_t native_device() const noexcept;
 
  private:
   struct Impl;

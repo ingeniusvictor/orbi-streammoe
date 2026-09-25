@@ -332,4 +332,10 @@ std::uintptr_t VulkanFloatBuffer::native_buffer() const noexcept {
       : 0U;
 }
 
+std::uintptr_t VulkanFloatBuffer::native_device() const noexcept {
+  return impl_ != nullptr
+      ? reinterpret_cast<std::uintptr_t>(impl_->device)
+      : 0U;
+}
+
 }  // namespace orbi::streammoe

@@ -35,4 +35,13 @@ struct QpackExpertQ4View {
     std::string_view projection,
     std::span<const float> x) noexcept;
 
+
+[[nodiscard]] VulkanBufferDispatchResult run_vulkan_qpack_q4_projection_buffers(
+    VulkanComputeContext& context,
+    const QpackReader& reader,
+    const ExpertCacheEntry& entry,
+    std::string_view projection,
+    const VulkanFloatBuffer& x,
+    VulkanFloatBuffer& y) noexcept;
+
 }  // namespace orbi::streammoe

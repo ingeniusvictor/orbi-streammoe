@@ -269,4 +269,38 @@ VulkanQ4GemvResult run_vulkan_qpack_q4_projection(
   }
 }
 
+
+VulkanBufferDispatchResult run_vulkan_qpack_q4_projection_buffers(
+    VulkanComputeContext& context,
+    const QpackReader& reader,
+    const ExpertCacheEntry& entry,
+    std::string_view projection,
+    const VulkanFloatBuffer& x,
+    VulkanFloatBuffer& y) noexcept {
+  try {
+    const auto view =
+        bind_qpack_q4_projection(reader, entry, projection);
+    return run_vulkan_q4_gemv_buffers(
+        context,
+        view.packed,
+        view.out_dim,
+        view.packed_cols,
+        view.scales,
+        view.biases,
+        view.group_size,
+        x,
+        y);
+  } catch (const std::exception& e) {
+    VulkanBufferDispatchResult result;
+    result.diagnostic =
+        std::string("qpack expert persistent projection failed: ") + e.what();
+    return result;
+  } catch (...) {
+    VulkanBufferDispatchResult result;
+    result.diagnostic =
+        "qpack expert persistent projection encountered an unknown exception.";
+    return result;
+  }
+}
+
 }  // namespace orbi::streammoe
