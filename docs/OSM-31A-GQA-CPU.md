@@ -1,6 +1,6 @@
 # OSM-31A — Qwen3-Next gated GQA CPU decode semantics
 
-Status: **IMPLEMENTED / CERTIFICATION PENDING**
+Status: **IMPLEMENTED / CLEAN CI CERTIFICATION PENDING**
 
 ## Goal
 
@@ -61,3 +61,10 @@ reference vectors match within tolerance.
 Extend the checkpoint config contract with RoPE/context fields, bind the exact
 `self_attn.q_proj/k_proj/v_proj/o_proj` plus q/k norm tensors, and execute this
 stateful GQA oracle directly from qpack checkpoint data.
+
+
+## Clean-base certification
+
+After OSM-30 was squash-merged, this branch was rebuilt directly from the new
+canonical `main`. The final CI run validates only the OSM-31A GQA semantic
+oracle delta.
