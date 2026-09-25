@@ -215,6 +215,12 @@ if(ORBI_STREAMMOE_BUILD_TESTS)
   target_link_libraries(orbi_streammoe_vulkan_resident_expert_tests PRIVATE orbi_streammoe_core)
   target_compile_features(orbi_streammoe_vulkan_resident_expert_tests PRIVATE cxx_std_20)
 
+  add_executable(orbi_streammoe_vulkan_resident_output_tests
+    tests/vulkan_resident_output_test.cpp
+  )
+  target_link_libraries(orbi_streammoe_vulkan_resident_output_tests PRIVATE orbi_streammoe_core)
+  target_compile_features(orbi_streammoe_vulkan_resident_output_tests PRIVATE cxx_std_20)
+
   add_executable(orbi_streammoe_vulkan_resident_expert_cache_tests
     tests/vulkan_resident_expert_cache_test.cpp
   )
@@ -241,6 +247,7 @@ if(ORBI_STREAMMOE_BUILD_TESTS)
   add_test(NAME orbi_streammoe_vulkan_persistent_ops_tests COMMAND orbi_streammoe_vulkan_persistent_ops_tests)
   add_test(NAME orbi_streammoe_vulkan_preloaded_q4_weights_tests COMMAND orbi_streammoe_vulkan_preloaded_q4_weights_tests)
   add_test(NAME orbi_streammoe_vulkan_resident_expert_tests COMMAND orbi_streammoe_vulkan_resident_expert_tests)
+  add_test(NAME orbi_streammoe_vulkan_resident_output_tests COMMAND orbi_streammoe_vulkan_resident_output_tests)
   add_test(NAME orbi_streammoe_vulkan_resident_expert_cache_tests COMMAND orbi_streammoe_vulkan_resident_expert_cache_tests)
 
   if(WIN32)
