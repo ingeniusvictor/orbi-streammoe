@@ -1,6 +1,6 @@
 # OSM-29C — checkpoint input-RMSNorm + DeltaNet residual sublayer
 
-Status: **IMPLEMENTED / CERTIFICATION PENDING**
+Status: **IMPLEMENTED / CLEAN CI CERTIFICATION PENDING**
 
 ## Goal
 
@@ -73,3 +73,10 @@ out = h + SparseMoE(RMSNorm(h))
 
 That becomes the first complete **linear-attention Qwen3-Next decoder layer**
 assembled from checkpoint-bound components.
+
+
+## Clean-base certification
+
+After OSM-29B was squash-merged, this branch was rebuilt directly from the new
+canonical `main` so the final CI run validates only the OSM-29C delta rather
+than inherited stacked commits.
