@@ -211,36 +211,76 @@ fs::path make_qpack(const fs::path& root) {
   return root;
 }
 
-std::vector<float> cpu_projection(
-    const QpackExpertQ4View& view,
-    std::span<const float> x) {
-  const auto dequantized = cpu::dequantize_affine_rows(
-      view.packed,
-      view.out_dim,
-      view.packed_cols,
-      view.scales,
-      view.biases,
+struct CpuExpertOracle {
+  std::vector<float> gate;
+  std::vector<float> up;
+  std::vector<float> down;
+  std::size_t input_dim{};
+  std::size_t intermediate_dim{};
+  std::size_t output_dim{};
+};
+
+CpuExpertOracle make_cpu_oracle(
+    const QpackExpertQ4View& gate,
+    const QpackExpertQ4View& up,
+    const QpackExpertQ4View& down) {
+  CpuExpertOracle oracle;
+  oracle.input_dim = gate.packed_cols * 8U;
+  oracle.intermediate_dim = gate.out_dim;
+  oracle.output_dim = down.out_dim;
+
+  oracle.gate = cpu::dequantize_affine_rows(
+      gate.packed,
+      gate.out_dim,
+      gate.packed_cols,
+      gate.scales,
+      gate.biases,
       cpu::AffineQuantSpec{
           .bits = 4,
-          .group_size = static_cast<std::uint32_t>(view.group_size),
+          .group_size = static_cast<std::uint32_t>(gate.group_size),
       });
-
-  return cpu::matvec_row_major(
-      dequantized,
-      view.out_dim,
-      view.packed_cols * 8U,
-      x);
+  oracle.up = cpu::dequantize_affine_rows(
+      up.packed,
+      up.out_dim,
+      up.packed_cols,
+      up.scales,
+      up.biases,
+      cpu::AffineQuantSpec{
+          .bits = 4,
+          .group_size = static_cast<std::uint32_t>(up.group_size),
+      });
+  oracle.down = cpu::dequantize_affine_rows(
+      down.packed,
+      down.out_dim,
+      down.packed_cols,
+      down.scales,
+      down.biases,
+      cpu::AffineQuantSpec{
+          .bits = 4,
+          .group_size = static_cast<std::uint32_t>(down.group_size),
+      });
+  return oracle;
 }
 
 std::vector<float> cpu_expert(
-    const QpackExpertQ4View& gate,
-    const QpackExpertQ4View& up,
-    const QpackExpertQ4View& down,
+    const CpuExpertOracle& oracle,
     std::span<const float> x) {
-  auto hidden = cpu_projection(gate, x);
-  const auto up_values = cpu_projection(up, x);
+  auto hidden = cpu::matvec_row_major(
+      oracle.gate,
+      oracle.intermediate_dim,
+      oracle.input_dim,
+      x);
+  const auto up_values = cpu::matvec_row_major(
+      oracle.up,
+      oracle.intermediate_dim,
+      oracle.input_dim,
+      x);
   cpu::swiglu_inplace(hidden, up_values);
-  return cpu_projection(down, hidden);
+  return cpu::matvec_row_major(
+      oracle.down,
+      oracle.output_dim,
+      oracle.intermediate_dim,
+      hidden);
 }
 
 float max_abs_error(
@@ -276,6 +316,7 @@ int main() {
         bind_qpack_q4_projection(storage.reader(), first.front(), "up_proj");
     const auto down =
         bind_qpack_q4_projection(storage.reader(), first.front(), "down_proj");
+    const auto oracle = make_cpu_oracle(gate, up, down);
 
     std::string diagnostic;
     auto context = VulkanComputeContext::create(&diagnostic);
@@ -328,7 +369,7 @@ int main() {
             0.03125F;
       }
 
-      const auto expected = cpu_expert(gate, up, down, x);
+      const auto expected = cpu_expert(oracle, x);
       const auto actual = resident->run(*context, x);
       require(actual.executed, actual.diagnostic);
 
