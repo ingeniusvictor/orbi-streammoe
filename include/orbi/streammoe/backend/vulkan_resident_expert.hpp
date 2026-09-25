@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "orbi/streammoe/backend/vulkan_compute_context.hpp"
+#include "orbi/streammoe/backend/vulkan_float_buffer.hpp"
 #include "orbi/streammoe/cache/expert_cache.hpp"
 #include "orbi/streammoe/container/qpack.hpp"
 
@@ -57,6 +58,15 @@ class VulkanResidentExpert {
   [[nodiscard]] VulkanResidentExpertResult run(
       VulkanComputeContext& context,
       std::span<const float> x) noexcept;
+
+  /// Execute from an already-uploaded Vulkan input buffer and keep the final
+  /// expert output in this object's reusable Vulkan output buffer.
+  [[nodiscard]] VulkanBufferDispatchResult run_from_buffer(
+      VulkanComputeContext& context,
+      const VulkanFloatBuffer& x) noexcept;
+
+  /// Valid until this resident expert is moved/destroyed or executed again.
+  [[nodiscard]] const VulkanFloatBuffer* output_buffer() const noexcept;
 
  private:
   struct Impl;
