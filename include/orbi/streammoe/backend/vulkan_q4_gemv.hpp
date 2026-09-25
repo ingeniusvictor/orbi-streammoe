@@ -8,6 +8,7 @@
 
 #include "orbi/streammoe/backend/vulkan_compute_context.hpp"
 #include "orbi/streammoe/backend/vulkan_float_buffer.hpp"
+#include "orbi/streammoe/backend/vulkan_q4_weights.hpp"
 
 namespace orbi::streammoe {
 
@@ -43,6 +44,15 @@ struct VulkanQ4GemvResult {
     std::span<const float> scales,
     std::span<const float> biases,
     std::size_t group_size,
+    const VulkanFloatBuffer& x,
+    VulkanFloatBuffer& y) noexcept;
+
+
+/// Executes affine-Q4 GEMV using projection weights already resident in
+/// reusable Vulkan buffers.
+[[nodiscard]] VulkanBufferDispatchResult run_vulkan_q4_gemv_preloaded(
+    VulkanComputeContext& context,
+    const VulkanQ4ProjectionWeights& weights,
     const VulkanFloatBuffer& x,
     VulkanFloatBuffer& y) noexcept;
 
