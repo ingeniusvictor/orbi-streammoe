@@ -96,3 +96,6 @@ That is the bridge from a decoder engine to an actual autoregressive model.
 After OSM-33 was squash-merged, this branch was rebuilt directly from the new
 canonical `main`. The final CI run therefore validates only the OSM-34
 multi-layer decoder-stack delta.
+
+
+The certification PR now targets `main` directly.
