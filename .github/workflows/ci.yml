@@ -84,6 +84,21 @@ jobs:
             include/orbi/streammoe/generated/swiglu_spv.hpp \
             /tmp/orbi-shaders/swiglu_spv.hpp
 
+      - name: Verify pinned weighted accumulate SPIR-V
+        if: runner.os == 'Linux'
+        run: |
+          mkdir -p /tmp/orbi-shaders
+          glslangValidator -V --target-env vulkan1.0 \
+            -o /tmp/orbi-shaders/weighted_accumulate.comp.spv \
+            shaders/weighted_accumulate.comp
+          python3 scripts/embed_spirv.py \
+            /tmp/orbi-shaders/weighted_accumulate.comp.spv \
+            /tmp/orbi-shaders/weighted_accumulate_spv.hpp \
+            --symbol kWeightedAccumulateSpirv
+          diff -u \
+            include/orbi/streammoe/generated/weighted_accumulate_spv.hpp \
+            /tmp/orbi-shaders/weighted_accumulate_spv.hpp
+
       - name: Configure
         run: cmake -S . -B build -DORBI_STREAMMOE_BUILD_TESTS=ON
 
@@ -112,5 +127,6 @@ jobs:
           ctest --test-dir build -C Release -R orbi_streammoe_vulkan_preloaded_q4_weights_tests --output-on-failure -V
           ctest --test-dir build -C Release -R orbi_streammoe_vulkan_resident_expert_tests --output-on-failure -V
           ctest --test-dir build -C Release -R orbi_streammoe_vulkan_resident_output_tests --output-on-failure -V
+          ctest --test-dir build -C Release -R orbi_streammoe_vulkan_weighted_accumulate_tests --output-on-failure -V
           ctest --test-dir build -C Release -R orbi_streammoe_vulkan_resident_expert_cache_tests --output-on-failure -V
           ctest --test-dir build -C Release -R orbi_streammoe_weighted_routed_moe_tests --output-on-failure -V
