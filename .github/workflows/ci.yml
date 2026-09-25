@@ -69,7 +69,7 @@ jobs:
             include/orbi/streammoe/generated/q4_gemv_spv.hpp \
             /tmp/orbi-shaders/q4_gemv_spv.hpp
 
-      - name: Generate OSM-16 SwiGLU SPIR-V preview
+      - name: Verify pinned SwiGLU SPIR-V
         if: runner.os == 'Linux'
         run: |
           mkdir -p /tmp/orbi-shaders
@@ -80,14 +80,9 @@ jobs:
             /tmp/orbi-shaders/swiglu.comp.spv \
             /tmp/orbi-shaders/swiglu_spv.hpp \
             --symbol kSwiGluSpirv
-
-      - name: Upload OSM-16 SwiGLU SPIR-V preview
-        if: runner.os == 'Linux'
-        uses: actions/upload-artifact@v4
-        with:
-          name: osm16-swiglu-spv
-          path: /tmp/orbi-shaders/swiglu_spv.hpp
-          if-no-files-found: error
+          diff -u \
+            include/orbi/streammoe/generated/swiglu_spv.hpp \
+            /tmp/orbi-shaders/swiglu_spv.hpp
 
       - name: Configure
         run: cmake -S . -B build -DORBI_STREAMMOE_BUILD_TESTS=ON
@@ -111,3 +106,4 @@ jobs:
           ctest --test-dir build -C Release -R orbi_streammoe_vulkan_qpack_expert_tests --output-on-failure -V
           ctest --test-dir build -C Release -R orbi_streammoe_qpack_metadata_dtype_tests --output-on-failure -V
           ctest --test-dir build -C Release -R orbi_streammoe_vulkan_qpack_expert_mlp_tests --output-on-failure -V
+          ctest --test-dir build -C Release -R orbi_streammoe_vulkan_swiglu_tests --output-on-failure -V
