@@ -60,6 +60,7 @@ add_library(orbi_streammoe_core
   src/model/checkpoint_linear_decoder_layer.cpp
   src/model/gqa_cpu.cpp
   src/model/checkpoint_gqa.cpp
+  src/model/checkpoint_gqa_sublayer.cpp
   src/model/shared_expert.cpp
   src/cache/expert_cache.cpp
   src/storage/qpack_expert_storage.cpp
@@ -187,6 +188,12 @@ if(ORBI_STREAMMOE_BUILD_TESTS)
   )
   target_link_libraries(orbi_streammoe_checkpoint_gqa_tests PRIVATE orbi_streammoe_core)
   target_compile_features(orbi_streammoe_checkpoint_gqa_tests PRIVATE cxx_std_20)
+
+  add_executable(orbi_streammoe_checkpoint_gqa_sublayer_tests
+    tests/checkpoint_gqa_sublayer_test.cpp
+  )
+  target_link_libraries(orbi_streammoe_checkpoint_gqa_sublayer_tests PRIVATE orbi_streammoe_core)
+  target_compile_features(orbi_streammoe_checkpoint_gqa_sublayer_tests PRIVATE cxx_std_20)
 
   add_executable(orbi_streammoe_cpu_reference_tests
     tests/cpu_reference_test.cpp
@@ -345,6 +352,7 @@ if(ORBI_STREAMMOE_BUILD_TESTS)
   add_test(NAME orbi_streammoe_checkpoint_linear_decoder_layer_tests COMMAND orbi_streammoe_checkpoint_linear_decoder_layer_tests)
   add_test(NAME orbi_streammoe_gqa_cpu_tests COMMAND orbi_streammoe_gqa_cpu_tests)
   add_test(NAME orbi_streammoe_checkpoint_gqa_tests COMMAND orbi_streammoe_checkpoint_gqa_tests)
+  add_test(NAME orbi_streammoe_checkpoint_gqa_sublayer_tests COMMAND orbi_streammoe_checkpoint_gqa_sublayer_tests)
   add_test(NAME orbi_streammoe_cpu_reference_tests COMMAND orbi_streammoe_cpu_reference_tests)
   add_test(NAME orbi_streammoe_expert_cache_tests COMMAND orbi_streammoe_expert_cache_tests)
   add_test(NAME orbi_streammoe_qwen_router_tests COMMAND orbi_streammoe_qwen_router_tests)
