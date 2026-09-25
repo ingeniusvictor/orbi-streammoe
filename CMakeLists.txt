@@ -52,6 +52,7 @@ add_library(orbi_streammoe_core
   src/backend/vulkan_compute_context.cpp
   src/backend/vulkan_compute_roundtrip.cpp
   src/backend/vulkan_rmsnorm.cpp
+  src/backend/vulkan_q4_dequant.cpp
 )
 
 if(WIN32)
@@ -132,6 +133,12 @@ if(ORBI_STREAMMOE_BUILD_TESTS)
   target_link_libraries(orbi_streammoe_vulkan_rmsnorm_tests PRIVATE orbi_streammoe_core)
   target_compile_features(orbi_streammoe_vulkan_rmsnorm_tests PRIVATE cxx_std_20)
 
+  add_executable(orbi_streammoe_vulkan_q4_dequant_tests
+    tests/vulkan_q4_dequant_test.cpp
+  )
+  target_link_libraries(orbi_streammoe_vulkan_q4_dequant_tests PRIVATE orbi_streammoe_core)
+  target_compile_features(orbi_streammoe_vulkan_q4_dequant_tests PRIVATE cxx_std_20)
+
   add_test(NAME orbi_streammoe_smoke COMMAND orbi_streammoe_smoke)
   add_test(NAME orbi_streammoe_qpack_tests COMMAND orbi_streammoe_qpack_tests)
   add_test(NAME orbi_streammoe_cpu_reference_tests COMMAND orbi_streammoe_cpu_reference_tests)
@@ -140,6 +147,7 @@ if(ORBI_STREAMMOE_BUILD_TESTS)
   add_test(NAME orbi_streammoe_vulkan_compute_context_tests COMMAND orbi_streammoe_vulkan_compute_context_tests)
   add_test(NAME orbi_streammoe_vulkan_compute_roundtrip_tests COMMAND orbi_streammoe_vulkan_compute_roundtrip_tests)
   add_test(NAME orbi_streammoe_vulkan_rmsnorm_tests COMMAND orbi_streammoe_vulkan_rmsnorm_tests)
+  add_test(NAME orbi_streammoe_vulkan_q4_dequant_tests COMMAND orbi_streammoe_vulkan_q4_dequant_tests)
 
   if(WIN32)
     add_executable(orbi_streammoe_windows_io_tests
