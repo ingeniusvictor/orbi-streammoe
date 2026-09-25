@@ -52,8 +52,18 @@ class SafetensorsReader {
   [[nodiscard]] std::vector<float> read_floats(
       std::string_view name) const;
 
+  [[nodiscard]] std::vector<float> read_floats(
+      std::string_view name,
+      std::size_t element_offset,
+      std::size_t element_count) const;
+
   [[nodiscard]] std::vector<std::uint32_t> read_u32(
       std::string_view name) const;
+
+  [[nodiscard]] std::vector<std::uint32_t> read_u32(
+      std::string_view name,
+      std::size_t element_offset,
+      std::size_t element_count) const;
 
   [[nodiscard]] static std::size_t bytes_per_element(
       std::string_view dtype);
