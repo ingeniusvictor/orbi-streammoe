@@ -1,0 +1,48 @@
+#version 450
+
+layout(local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
+
+layout(std430, set = 0, binding = 0) readonly buffer PackedBuffer {
+    uint packed[];
+};
+
+layout(std430, set = 0, binding = 1) readonly buffer ScaleBuffer {
+    float scales[];
+};
+
+layout(std430, set = 0, binding = 2) readonly buffer BiasBuffer {
+    float biases[];
+};
+
+layout(std430, set = 0, binding = 3) writeonly buffer OutputBuffer {
+    float output_values[];
+};
+
+layout(push_constant) uniform Params {
+    uint total_values;
+    uint packed_cols;
+    uint logical_cols;
+    uint group_size;
+} params;
+
+void main() {
+    uint index = gl_GlobalInvocationID.x;
+    if (index >= params.total_values) {
+        return;
+    }
+
+    uint row = index / params.logical_cols;
+    uint col = index - row * params.logical_cols;
+
+    uint word_index = col >> 3u;
+    uint lane = col & 7u;
+    uint word = packed[row * params.packed_cols + word_index];
+    uint q = (word >> (lane * 4u)) & 0xFu;
+
+    uint groups_per_row = params.logical_cols / params.group_size;
+    uint group = col / params.group_size;
+    uint group_index = row * groups_per_row + group;
+
+    output_values[index] =
+        scales[group_index] * float(q) + biases[group_index];
+}
