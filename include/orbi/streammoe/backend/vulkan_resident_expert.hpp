@@ -48,6 +48,7 @@ class VulkanResidentExpert {
   [[nodiscard]] std::size_t intermediate_dim() const noexcept;
   [[nodiscard]] std::size_t output_dim() const noexcept;
   [[nodiscard]] std::size_t packed_weight_bytes() const noexcept;
+  [[nodiscard]] std::size_t accounted_bytes() const noexcept;
   [[nodiscard]] std::uintptr_t native_device() const noexcept;
 
   /// Executes gate/up -> SwiGLU -> down using resident projection weights and
