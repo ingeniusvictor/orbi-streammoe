@@ -47,6 +47,7 @@ add_library(orbi_streammoe_core
   src/container/qpack.cpp
   src/container/safetensors.cpp
   src/container/qpack_dense.cpp
+  src/container/mlx_affine_checkpoint.cpp
   src/cpu/reference_ops.cpp
   src/model/qwen_router.cpp
   src/model/routed_moe.cpp
@@ -117,6 +118,12 @@ if(ORBI_STREAMMOE_BUILD_TESTS)
   )
   target_link_libraries(orbi_streammoe_safetensors_dense_tests PRIVATE orbi_streammoe_core)
   target_compile_features(orbi_streammoe_safetensors_dense_tests PRIVATE cxx_std_20)
+
+  add_executable(orbi_streammoe_mlx_affine_checkpoint_tests
+    tests/mlx_affine_checkpoint_test.cpp
+  )
+  target_link_libraries(orbi_streammoe_mlx_affine_checkpoint_tests PRIVATE orbi_streammoe_core)
+  target_compile_features(orbi_streammoe_mlx_affine_checkpoint_tests PRIVATE cxx_std_20)
 
   add_executable(orbi_streammoe_cpu_reference_tests
     tests/cpu_reference_test.cpp
@@ -265,6 +272,7 @@ if(ORBI_STREAMMOE_BUILD_TESTS)
   add_test(NAME orbi_streammoe_smoke COMMAND orbi_streammoe_smoke)
   add_test(NAME orbi_streammoe_qpack_tests COMMAND orbi_streammoe_qpack_tests)
   add_test(NAME orbi_streammoe_safetensors_dense_tests COMMAND orbi_streammoe_safetensors_dense_tests)
+  add_test(NAME orbi_streammoe_mlx_affine_checkpoint_tests COMMAND orbi_streammoe_mlx_affine_checkpoint_tests)
   add_test(NAME orbi_streammoe_cpu_reference_tests COMMAND orbi_streammoe_cpu_reference_tests)
   add_test(NAME orbi_streammoe_expert_cache_tests COMMAND orbi_streammoe_expert_cache_tests)
   add_test(NAME orbi_streammoe_qwen_router_tests COMMAND orbi_streammoe_qwen_router_tests)
