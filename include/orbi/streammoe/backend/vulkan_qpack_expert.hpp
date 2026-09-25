@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <span>
 #include <string>
+#include <vector>
 
 #include "orbi/streammoe/backend/vulkan_compute_context.hpp"
 #include "orbi/streammoe/backend/vulkan_q4_gemv.hpp"
@@ -14,11 +15,12 @@ namespace orbi::streammoe {
 
 struct QpackExpertQ4View {
   std::span<const std::uint32_t> packed;
-  std::span<const float> scales;
-  std::span<const float> biases;
+  std::vector<float> scales;
+  std::vector<float> biases;
   std::size_t out_dim{};
   std::size_t packed_cols{};
   std::size_t group_size{};
+  std::string metadata_dtype;
 };
 
 [[nodiscard]] QpackExpertQ4View bind_qpack_q4_projection(
