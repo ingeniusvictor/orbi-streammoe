@@ -8,6 +8,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "orbi/streammoe/container/mlx_affine_checkpoint.hpp"
