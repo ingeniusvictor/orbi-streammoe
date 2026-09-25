@@ -19,6 +19,10 @@ struct Qwen3NextDenseConfig {
   std::size_t num_attention_heads{};
   std::size_t num_key_value_heads{};
   std::size_t head_dim{};
+  float partial_rotary_factor{0.25F};
+  float rope_theta{10000000.0F};
+  float rms_norm_eps{1e-6F};
+  std::size_t max_position_embeddings{262144U};
 
   std::size_t linear_num_value_heads{};
   std::size_t linear_num_key_heads{};
@@ -47,6 +51,12 @@ struct Qwen3NextDenseConfig {
 
   [[nodiscard]] std::size_t conv_dim() const noexcept {
     return 2U * key_dim() + value_dim();
+  }
+
+  [[nodiscard]] std::size_t rotary_dims() const noexcept {
+    return static_cast<std::size_t>(
+        static_cast<double>(head_dim) *
+        static_cast<double>(partial_rotary_factor));
   }
 };
 
