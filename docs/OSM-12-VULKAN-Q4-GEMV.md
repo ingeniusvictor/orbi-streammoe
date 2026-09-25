@@ -1,6 +1,6 @@
 # OSM-12 — Fused Vulkan affine Q4 GEMV
 
-Status: **IMPLEMENTATION IN PROGRESS**
+Status: **IMPLEMENTED / CERTIFICATION PENDING**
 
 ## Goal
 
@@ -51,6 +51,35 @@ The reference path is:
 
 The Vulkan fused result must match that composed CPU oracle within a small
 floating-point tolerance.
+
+## Certification
+
+The fixture uses:
+
+- 7 output rows;
+- 128 logical input columns;
+- Q4 packing in 16 uint32 words per row;
+- group size 64;
+- varied scales and biases;
+- a signed fractional input vector.
+
+The CPU oracle explicitly dequantizes the same packed bytes and then applies
+`cpu::matvec_row_major`. The Vulkan path never materializes that float weight
+matrix.
+
+Linux CI requires actual Vulkan execution through Mesa llvmpipe when a hardware
+GPU is unavailable. The initial numerical tolerance is `5e-4` absolute error;
+the measured error is recorded before deciding whether to tighten it.
+
+## Exit gate
+
+OSM-12 is GREEN when:
+
+- pinned Q4 GEMV SPIR-V exactly matches the GLSL source;
+- Windows and Linux builds/tests pass;
+- Linux executes the fused shader through Vulkan;
+- fused GPU output matches CPU dequantize + matvec;
+- invalid group geometry is rejected before dispatch.
 
 ## Next
 
