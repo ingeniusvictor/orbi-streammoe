@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "orbi/streammoe/backend/vulkan_resident_expert_cache.hpp"
+#include "orbi/streammoe/backend/vulkan_resident_shared_expert.hpp"
 #include "orbi/streammoe/model/qwen_router.hpp"
 
 namespace orbi::streammoe {
@@ -13,6 +14,14 @@ namespace orbi::streammoe {
 struct RoutedMoeResult {
   bool executed{};
   QwenRouterResult routing;
+  std::vector<float> values;
+  std::string diagnostic;
+};
+
+struct QwenSparseMoeResult {
+  bool executed{};
+  QwenRouterResult routing;
+  float shared_gate{};
   std::vector<float> values;
   std::string diagnostic;
 };
@@ -37,6 +46,19 @@ struct RoutedMoeResult {
 [[nodiscard]] RoutedMoeResult run_weighted_routed_moe_vulkan_accum(
     VulkanComputeContext& context,
     VulkanResidentExpertCache& expert_cache,
+    std::uint32_t layer,
+    std::span<const float> hidden,
+    std::span<const float> router_weight,
+    QwenRouterConfig router_config) noexcept;
+
+/// Complete Qwen sparse-MoE semantic path for one token:
+/// routed Top-K weighted sum + sigmoid-gated always-on shared expert.
+/// The hidden vector is uploaded once and only the final combined output is
+/// downloaded.
+[[nodiscard]] QwenSparseMoeResult run_qwen_sparse_moe_vulkan_accum(
+    VulkanComputeContext& context,
+    VulkanResidentExpertCache& expert_cache,
+    VulkanResidentSharedExpert& shared_expert,
     std::uint32_t layer,
     std::span<const float> hidden,
     std::span<const float> router_weight,
