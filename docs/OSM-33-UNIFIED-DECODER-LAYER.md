@@ -1,6 +1,6 @@
 # OSM-33 — unified alternating Qwen3-Next decoder layer
 
-Status: **IMPLEMENTED / CERTIFICATION PENDING**
+Status: **IMPLEMENTED / CLEAN CI CERTIFICATION PENDING**
 
 ## Goal
 
@@ -86,3 +86,10 @@ OSM-33 is GREEN when CI proves:
 
 Instantiate a sequence of unified OSM-33 layers and execute hidden state through
 the real D-D-D-G alternating order while sharing one routed-expert cache.
+
+
+## Clean-base certification
+
+After OSM-32 was squash-merged, this branch was rebuilt directly from the new
+canonical `main`. The final CI run therefore validates only the OSM-33
+topology/dispatch delta.
