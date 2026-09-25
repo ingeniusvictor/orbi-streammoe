@@ -134,3 +134,4 @@ jobs:
           ctest --test-dir build -C Release -R orbi_streammoe_vulkan_shared_expert_tests --output-on-failure -V
           ctest --test-dir build -C Release -R orbi_streammoe_checkpoint_sparse_moe_tests --output-on-failure -V
           ctest --test-dir build -C Release -R orbi_streammoe_checkpoint_moe_sublayer_tests --output-on-failure -V
+          ctest --test-dir build -C Release -R orbi_streammoe_checkpoint_deltanet_sublayer_tests --output-on-failure -V
