@@ -1,6 +1,6 @@
 # OSM-28 — checkpoint-bound post-attention MoE sublayer
 
-Status: **IMPLEMENTED / FULL CHECKPOINT CERTIFICATION PENDING**
+Status: **IMPLEMENTED / END-TO-END CERTIFICATION IN CI**
 
 ## Goal
 
@@ -50,7 +50,7 @@ decoder semantics are complete.
 
 ## Exit gate
 
-OSM-28 code is structurally complete when:
+OSM-28 is GREEN when:
 
 - the post-attention norm comes from the same exact checkpoint layer binding;
 - malformed norm geometry and invalid epsilon are rejected;
@@ -58,9 +58,22 @@ OSM-28 code is structurally complete when:
 - execution is exactly `residual + MoE(RMSNorm(residual))`;
 - residual shape mismatch is rejected.
 
-Full GREEN certification requires an end-to-end qpack fixture test reusing the
-OSM-27 checkpoint/expert fixture. That test should compare the whole sublayer to
-an independent CPU oracle on Windows/Linux and real Vulkan on Linux.
+The certification now reuses the OSM-27-style qpack checkpoint/expert fixture
+and checks the whole sublayer against an independent CPU oracle.
+
+The fixture verifies:
+
+- checkpoint-bound post-attention RMSNorm parity;
+- checkpoint-bound router/shared expert execution;
+- streamed routed-expert Top-K execution;
+- cold Vulkan expert loads;
+- warm Vulkan-cache hits with host-cache bypass;
+- final residual output parity;
+- malformed residual shape rejection.
+
+Linux CI reruns this test with `ORBI_REQUIRE_VULKAN_COMPUTE=1`, so the end-to-end
+gate must execute through a real Vulkan implementation (Mesa llvmpipe is valid
+for CI).
 
 ## Next
 
