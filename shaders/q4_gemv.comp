@@ -1,0 +1,63 @@
+#version 450
+
+layout(local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
+
+layout(std430, set = 0, binding = 0) readonly buffer PackedBuffer {
+    uint packed[];
+};
+
+layout(std430, set = 0, binding = 1) readonly buffer ScaleBuffer {
+    float scales[];
+};
+
+layout(std430, set = 0, binding = 2) readonly buffer BiasBuffer {
+    float biases[];
+};
+
+layout(std430, set = 0, binding = 3) readonly buffer InputBuffer {
+    float x[];
+};
+
+layout(std430, set = 0, binding = 4) writeonly buffer OutputBuffer {
+    float y[];
+};
+
+layout(push_constant) uniform Params {
+    uint out_dim;
+    uint packed_cols;
+    uint in_dim;
+    uint group_size;
+} params;
+
+void main() {
+    uint row = gl_GlobalInvocationID.x;
+    if (row >= params.out_dim) {
+        return;
+    }
+
+    uint groups_per_row = params.in_dim / params.group_size;
+    float acc = 0.0;
+
+    for (uint g = 0; g < groups_per_row; ++g) {
+        float qdot = 0.0;
+        float xsum = 0.0;
+        uint base_col = g * params.group_size;
+
+        for (uint j = 0; j < params.group_size; ++j) {
+            uint col = base_col + j;
+            uint word = packed[row * params.packed_cols + (col >> 3u)];
+            uint lane = col & 7u;
+            uint q = (word >> (lane * 4u)) & 0xFu;
+            float xv = x[col];
+
+            qdot += float(q) * xv;
+            xsum += xv;
+        }
+
+        uint group_index = row * groups_per_row + g;
+        acc += scales[group_index] * qdot
+             + biases[group_index] * xsum;
+    }
+
+    y[row] = acc;
+}
