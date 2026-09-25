@@ -321,11 +321,72 @@ std::vector<std::byte> SafetensorsReader::read_raw(
 std::vector<float> SafetensorsReader::read_floats(
     std::string_view name) const {
   const auto& tensor = info(name);
-  const auto raw = read_raw(name);
+  const auto bytes = bytes_per_element(tensor.dtype);
+  if (tensor.byte_size() % bytes != 0U) {
+    throw std::runtime_error(
+        "safetensors: tensor byte size is not element aligned: " +
+        std::string(name));
+  }
+  const auto count64 = tensor.byte_size() / bytes;
+  if (count64 >
+      static_cast<std::uint64_t>(
+          std::numeric_limits<std::size_t>::max())) {
+    throw std::runtime_error(
+        "safetensors: tensor element count exceeds size_t: " +
+        std::string(name));
+  }
+  return read_floats(
+      name,
+      0U,
+      static_cast<std::size_t>(count64));
+}
 
-  std::vector<float> values;
+std::vector<float> SafetensorsReader::read_floats(
+    std::string_view name,
+    std::size_t element_offset,
+    std::size_t element_count) const {
+  const auto& tensor = info(name);
+  if (tensor.dtype != "F32" &&
+      tensor.dtype != "F16" &&
+      tensor.dtype != "BF16") {
+    throw std::runtime_error(
+        "safetensors: tensor is not F32/F16/BF16: " +
+        std::string(name));
+  }
+
+  const auto bytes = bytes_per_element(tensor.dtype);
+  const auto total64 = tensor.byte_size() / bytes;
+  if (element_offset >
+          static_cast<std::size_t>(
+              std::min<std::uint64_t>(
+                  total64,
+                  std::numeric_limits<std::size_t>::max())) ||
+      element_count >
+          static_cast<std::size_t>(
+              std::min<std::uint64_t>(
+                  total64 - std::min<std::uint64_t>(
+                      total64,
+                      static_cast<std::uint64_t>(element_offset)),
+                  std::numeric_limits<std::size_t>::max()))) {
+    throw std::out_of_range(
+        "safetensors: requested float element range is out of bounds");
+  }
+
+  if (element_offset >
+          std::numeric_limits<std::size_t>::max() / bytes ||
+      element_count >
+          std::numeric_limits<std::size_t>::max() / bytes) {
+    throw std::runtime_error(
+        "safetensors: float range byte geometry overflows size_t");
+  }
+
+  const auto byte_offset = element_offset * bytes;
+  const auto byte_count = element_count * bytes;
+  std::vector<std::byte> raw(byte_count);
+  read_raw(name, byte_offset, raw);
+
+  std::vector<float> values(element_count);
   if (tensor.dtype == "F32") {
-    values.resize(raw.size() / 4U);
     for (std::size_t i = 0; i < values.size(); ++i) {
       values[i] =
           std::bit_cast<float>(read_u32_le(raw.data() + i * 4U));
@@ -334,29 +395,21 @@ std::vector<float> SafetensorsReader::read_floats(
   }
 
   if (tensor.dtype == "F16") {
-    values.resize(raw.size() / 2U);
     for (std::size_t i = 0; i < values.size(); ++i) {
-      values[i] = half_to_float(
-          read_u16_le(raw.data() + i * 2U));
+      values[i] =
+          half_to_float(read_u16_le(raw.data() + i * 2U));
     }
     return values;
   }
 
-  if (tensor.dtype == "BF16") {
-    values.resize(raw.size() / 2U);
-    for (std::size_t i = 0; i < values.size(); ++i) {
-      const auto bits =
-          static_cast<std::uint32_t>(
-              read_u16_le(raw.data() + i * 2U))
-          << 16U;
-      values[i] = std::bit_cast<float>(bits);
-    }
-    return values;
+  for (std::size_t i = 0; i < values.size(); ++i) {
+    const auto bits =
+        static_cast<std::uint32_t>(
+            read_u16_le(raw.data() + i * 2U))
+        << 16U;
+    values[i] = std::bit_cast<float>(bits);
   }
-
-  throw std::runtime_error(
-      "safetensors: tensor is not F32/F16/BF16: " +
-      std::string(name));
+  return values;
 }
 
 std::vector<std::uint32_t> SafetensorsReader::read_u32(
@@ -366,9 +419,49 @@ std::vector<std::uint32_t> SafetensorsReader::read_u32(
     throw std::runtime_error(
         "safetensors: tensor is not U32: " + std::string(name));
   }
+  const auto total64 = tensor.byte_size() / 4U;
+  if (total64 >
+      static_cast<std::uint64_t>(
+          std::numeric_limits<std::size_t>::max())) {
+    throw std::runtime_error(
+        "safetensors: U32 tensor element count exceeds size_t: " +
+        std::string(name));
+  }
+  return read_u32(
+      name,
+      0U,
+      static_cast<std::size_t>(total64));
+}
 
-  const auto raw = read_raw(name);
-  std::vector<std::uint32_t> values(raw.size() / 4U);
+std::vector<std::uint32_t> SafetensorsReader::read_u32(
+    std::string_view name,
+    std::size_t element_offset,
+    std::size_t element_count) const {
+  const auto& tensor = info(name);
+  if (tensor.dtype != "U32") {
+    throw std::runtime_error(
+        "safetensors: tensor is not U32: " + std::string(name));
+  }
+
+  const auto total64 = tensor.byte_size() / 4U;
+  if (static_cast<std::uint64_t>(element_offset) > total64 ||
+      static_cast<std::uint64_t>(element_count) >
+          total64 - static_cast<std::uint64_t>(element_offset)) {
+    throw std::out_of_range(
+        "safetensors: requested U32 element range is out of bounds");
+  }
+  if (element_offset >
+          std::numeric_limits<std::size_t>::max() / 4U ||
+      element_count >
+          std::numeric_limits<std::size_t>::max() / 4U) {
+    throw std::runtime_error(
+        "safetensors: U32 range byte geometry overflows size_t");
+  }
+
+  std::vector<std::byte> raw(element_count * 4U);
+  read_raw(name, element_offset * 4U, raw);
+
+  std::vector<std::uint32_t> values(element_count);
   for (std::size_t i = 0; i < values.size(); ++i) {
     values[i] = read_u32_le(raw.data() + i * 4U);
   }
