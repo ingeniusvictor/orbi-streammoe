@@ -1,6 +1,6 @@
 # OSM-32 — complete checkpoint-bound full-attention decoder layer
 
-Status: **IMPLEMENTED / CERTIFICATION PENDING**
+Status: **IMPLEMENTED / CLEAN CI CERTIFICATION PENDING**
 
 ## Goal
 
@@ -70,3 +70,10 @@ Introduce one layer wrapper that selects:
 according to `full_attention_interval`.
 
 That becomes the building block for an actual multi-layer Qwen3-Next decoder.
+
+
+## Clean-base certification
+
+After OSM-31C was squash-merged, this branch was rebuilt directly from the new
+canonical `main`. The final CI run therefore validates only the OSM-32
+full-attention decoder-layer delta.
