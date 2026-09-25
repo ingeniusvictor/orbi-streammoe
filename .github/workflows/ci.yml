@@ -54,6 +54,21 @@ jobs:
             include/orbi/streammoe/generated/q4_dequant_spv.hpp \
             /tmp/orbi-shaders/q4_dequant_spv.hpp
 
+      - name: Verify pinned Q4 GEMV SPIR-V
+        if: runner.os == 'Linux'
+        run: |
+          mkdir -p /tmp/orbi-shaders
+          glslangValidator -V --target-env vulkan1.0 \
+            -o /tmp/orbi-shaders/q4_gemv.comp.spv \
+            shaders/q4_gemv.comp
+          python3 scripts/embed_spirv.py \
+            /tmp/orbi-shaders/q4_gemv.comp.spv \
+            /tmp/orbi-shaders/q4_gemv_spv.hpp \
+            --symbol kQ4GemvSpirv
+          diff -u \
+            include/orbi/streammoe/generated/q4_gemv_spv.hpp \
+            /tmp/orbi-shaders/q4_gemv_spv.hpp
+
       - name: Configure
         run: cmake -S . -B build -DORBI_STREAMMOE_BUILD_TESTS=ON
 
@@ -72,3 +87,4 @@ jobs:
           ctest --test-dir build -C Release -R orbi_streammoe_vulkan_compute_roundtrip_tests --output-on-failure -V
           ctest --test-dir build -C Release -R orbi_streammoe_vulkan_rmsnorm_tests --output-on-failure -V
           ctest --test-dir build -C Release -R orbi_streammoe_vulkan_q4_dequant_tests --output-on-failure -V
+          ctest --test-dir build -C Release -R orbi_streammoe_vulkan_q4_gemv_tests --output-on-failure -V
