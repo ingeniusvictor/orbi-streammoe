@@ -132,6 +132,12 @@ if(ORBI_STREAMMOE_BUILD_TESTS)
   target_link_libraries(orbi_streammoe_weighted_routed_moe_tests PRIVATE orbi_streammoe_core)
   target_compile_features(orbi_streammoe_weighted_routed_moe_tests PRIVATE cxx_std_20)
 
+  add_executable(orbi_streammoe_vulkan_routed_moe_accumulate_tests
+    tests/vulkan_routed_moe_accumulate_test.cpp
+  )
+  target_link_libraries(orbi_streammoe_vulkan_routed_moe_accumulate_tests PRIVATE orbi_streammoe_core)
+  target_compile_features(orbi_streammoe_vulkan_routed_moe_accumulate_tests PRIVATE cxx_std_20)
+
   add_executable(orbi_streammoe_vulkan_runtime_tests
     tests/vulkan_runtime_test.cpp
   )
@@ -240,6 +246,7 @@ if(ORBI_STREAMMOE_BUILD_TESTS)
   add_test(NAME orbi_streammoe_expert_cache_tests COMMAND orbi_streammoe_expert_cache_tests)
   add_test(NAME orbi_streammoe_qwen_router_tests COMMAND orbi_streammoe_qwen_router_tests)
   add_test(NAME orbi_streammoe_weighted_routed_moe_tests COMMAND orbi_streammoe_weighted_routed_moe_tests)
+  add_test(NAME orbi_streammoe_vulkan_routed_moe_accumulate_tests COMMAND orbi_streammoe_vulkan_routed_moe_accumulate_tests)
   add_test(NAME orbi_streammoe_vulkan_runtime_tests COMMAND orbi_streammoe_vulkan_runtime_tests)
   add_test(NAME orbi_streammoe_vulkan_compute_context_tests COMMAND orbi_streammoe_vulkan_compute_context_tests)
   add_test(NAME orbi_streammoe_vulkan_compute_roundtrip_tests COMMAND orbi_streammoe_vulkan_compute_roundtrip_tests)

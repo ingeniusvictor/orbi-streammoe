@@ -31,4 +31,15 @@ struct RoutedMoeResult {
     std::span<const float> router_weight,
     QwenRouterConfig router_config) noexcept;
 
+/// Optimized routed path: upload hidden once, execute selected experts from the
+/// shared Vulkan input, accumulate weighted outputs on Vulkan, then download
+/// only the final routed result.
+[[nodiscard]] RoutedMoeResult run_weighted_routed_moe_vulkan_accum(
+    VulkanComputeContext& context,
+    VulkanResidentExpertCache& expert_cache,
+    std::uint32_t layer,
+    std::span<const float> hidden,
+    std::span<const float> router_weight,
+    QwenRouterConfig router_config) noexcept;
+
 }  // namespace orbi::streammoe
