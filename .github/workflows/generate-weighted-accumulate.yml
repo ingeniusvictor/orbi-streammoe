@@ -1,0 +1,32 @@
+name: generate-weighted-accumulate-spirv
+
+on:
+  push:
+    branches:
+      - feature/osm-24b-vulkan-weighted-accumulate
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install glslang
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y glslang-tools
+
+      - name: Generate pinned header
+        run: |
+          mkdir -p /tmp/orbi-weighted
+          glslangValidator -V --target-env vulkan1.0 \
+            -o /tmp/orbi-weighted/weighted_accumulate.comp.spv \
+            shaders/weighted_accumulate.comp
+          python3 scripts/embed_spirv.py \
+            /tmp/orbi-weighted/weighted_accumulate.comp.spv \
+            /tmp/orbi-weighted/weighted_accumulate_spv.hpp \
+            --symbol kWeightedAccumulateSpirv
+          echo "=== ORBI_WEIGHTED_SPIRV_HEADER_BEGIN ==="
+          cat /tmp/orbi-weighted/weighted_accumulate_spv.hpp
+          echo "=== ORBI_WEIGHTED_SPIRV_HEADER_END ==="
