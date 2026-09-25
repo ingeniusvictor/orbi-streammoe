@@ -54,6 +54,7 @@ add_library(orbi_streammoe_core
   src/model/qwen_dense_binding.cpp
   src/model/checkpoint_sparse_moe.cpp
   src/model/checkpoint_moe_sublayer.cpp
+  src/model/gated_deltanet_cpu.cpp
   src/model/shared_expert.cpp
   src/cache/expert_cache.cpp
   src/storage/qpack_expert_storage.cpp
@@ -145,6 +146,12 @@ if(ORBI_STREAMMOE_BUILD_TESTS)
   )
   target_link_libraries(orbi_streammoe_checkpoint_moe_sublayer_tests PRIVATE orbi_streammoe_core)
   target_compile_features(orbi_streammoe_checkpoint_moe_sublayer_tests PRIVATE cxx_std_20)
+
+  add_executable(orbi_streammoe_gated_deltanet_cpu_tests
+    tests/gated_deltanet_cpu_test.cpp
+  )
+  target_link_libraries(orbi_streammoe_gated_deltanet_cpu_tests PRIVATE orbi_streammoe_core)
+  target_compile_features(orbi_streammoe_gated_deltanet_cpu_tests PRIVATE cxx_std_20)
 
   add_executable(orbi_streammoe_cpu_reference_tests
     tests/cpu_reference_test.cpp
@@ -297,6 +304,7 @@ if(ORBI_STREAMMOE_BUILD_TESTS)
   add_test(NAME orbi_streammoe_qwen_dense_binding_tests COMMAND orbi_streammoe_qwen_dense_binding_tests)
   add_test(NAME orbi_streammoe_checkpoint_sparse_moe_tests COMMAND orbi_streammoe_checkpoint_sparse_moe_tests)
   add_test(NAME orbi_streammoe_checkpoint_moe_sublayer_tests COMMAND orbi_streammoe_checkpoint_moe_sublayer_tests)
+  add_test(NAME orbi_streammoe_gated_deltanet_cpu_tests COMMAND orbi_streammoe_gated_deltanet_cpu_tests)
   add_test(NAME orbi_streammoe_cpu_reference_tests COMMAND orbi_streammoe_cpu_reference_tests)
   add_test(NAME orbi_streammoe_expert_cache_tests COMMAND orbi_streammoe_expert_cache_tests)
   add_test(NAME orbi_streammoe_qwen_router_tests COMMAND orbi_streammoe_qwen_router_tests)
