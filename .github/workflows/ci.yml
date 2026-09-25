@@ -54,7 +54,7 @@ jobs:
             include/orbi/streammoe/generated/q4_dequant_spv.hpp \
             /tmp/orbi-shaders/q4_dequant_spv.hpp
 
-      - name: Generate Q4 GEMV SPIR-V preview
+      - name: Verify pinned Q4 GEMV SPIR-V
         if: runner.os == 'Linux'
         run: |
           mkdir -p /tmp/orbi-shaders
@@ -65,9 +65,9 @@ jobs:
             /tmp/orbi-shaders/q4_gemv.comp.spv \
             /tmp/orbi-shaders/q4_gemv_spv.hpp \
             --symbol kQ4GemvSpirv
-          echo ORBI_Q4_GEMV_HEADER_BEGIN
-          cat /tmp/orbi-shaders/q4_gemv_spv.hpp
-          echo ORBI_Q4_GEMV_HEADER_END
+          diff -u \
+            include/orbi/streammoe/generated/q4_gemv_spv.hpp \
+            /tmp/orbi-shaders/q4_gemv_spv.hpp
 
       - name: Configure
         run: cmake -S . -B build -DORBI_STREAMMOE_BUILD_TESTS=ON
@@ -87,3 +87,4 @@ jobs:
           ctest --test-dir build -C Release -R orbi_streammoe_vulkan_compute_roundtrip_tests --output-on-failure -V
           ctest --test-dir build -C Release -R orbi_streammoe_vulkan_rmsnorm_tests --output-on-failure -V
           ctest --test-dir build -C Release -R orbi_streammoe_vulkan_q4_dequant_tests --output-on-failure -V
+          ctest --test-dir build -C Release -R orbi_streammoe_vulkan_q4_gemv_tests --output-on-failure -V
