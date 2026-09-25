@@ -1,6 +1,6 @@
 # OSM-31C — checkpoint input-RMSNorm + GQA residual sublayer
 
-Status: **IMPLEMENTED / CERTIFICATION PENDING**
+Status: **IMPLEMENTED / CLEAN CI CERTIFICATION PENDING**
 
 ## Goal
 
@@ -72,3 +72,10 @@ out = h + SparseMoE(RMSNorm(h))
 
 OSM-32 will give ORBI both decoder-layer variants needed by the alternating
 Qwen3-Next topology.
+
+
+## Clean-base certification
+
+After OSM-31B was squash-merged, this branch was rebuilt directly from the new
+canonical `main`. The final CI run therefore validates only the OSM-31C
+full-attention residual-sublayer delta.
