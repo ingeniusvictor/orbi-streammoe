@@ -36,6 +36,13 @@ int main(int argc, char** argv) {
     require(
         plan.count(QpackConversionAction::direct_expert_quantize) == 0U,
         "official checkpoint unexpectedly uses direct expert tensors");
+    require(
+        plan.count(QpackConversionClass::auxiliary_mtp) > 0U,
+        "official checkpoint MTP auxiliary inventory missing");
+    require(
+        plan.count(QpackConversionClass::auxiliary_mtp) ==
+            plan.count(QpackConversionAction::exclude_auxiliary_mtp),
+        "official MTP exclusion accounting mismatch");
 
     std::cout
         << "OSM-39A official QPACK conversion plan: PASS\n"
@@ -48,6 +55,8 @@ int main(int argc, char** argv) {
         << plan.count(QpackConversionClass::layer_dense) << "\n"
         << "  routed_expert="
         << plan.count(QpackConversionClass::routed_expert) << "\n"
+        << "  auxiliary_mtp="
+        << plan.count(QpackConversionClass::auxiliary_mtp) << "\n"
         << "  packed_gate_up="
         << plan.count(QpackConversionAction::split_packed_gate_up_experts)
         << "\n"
