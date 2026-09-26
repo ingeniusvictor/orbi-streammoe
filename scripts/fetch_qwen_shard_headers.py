@@ -114,12 +114,32 @@ def main() -> int:
     parser.add_argument("--output", required=True)
     parser.add_argument("--layer", type=int)
     parser.add_argument("--experts", help="comma-separated routed expert IDs")
+    parser.add_argument(
+        "--tensor-list-json",
+        help="OSM-40D dense source inventory JSON to append to selected tensors",
+    )
     args = parser.parse_args()
 
     if (args.layer is None) != (args.experts is None):
         raise RuntimeError("--layer and --experts must be supplied together")
 
     selected_tensors = list(SELECTED_TENSORS)
+    if args.tensor_list_json is not None:
+        tensor_list = json.loads(
+            pathlib.Path(args.tensor_list_json).read_text(encoding="utf-8")
+        )
+        if tensor_list.get("schema_version") != 1:
+            raise RuntimeError("unsupported tensor-list schema")
+        entries = tensor_list.get("entries")
+        if not isinstance(entries, list) or not entries:
+            raise RuntimeError("tensor-list entries must be a non-empty array")
+        for entry in entries:
+            name = entry.get("source_tensor")
+            if not isinstance(name, str) or not name:
+                raise RuntimeError("tensor-list contains invalid source_tensor")
+            if name not in selected_tensors:
+                selected_tensors.append(name)
+
     if args.experts is not None:
         if args.layer < 0:
             raise RuntimeError("--layer must be non-negative")

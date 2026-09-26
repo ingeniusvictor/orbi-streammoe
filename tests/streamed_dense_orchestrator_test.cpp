@@ -142,6 +142,23 @@ int main() {
 
     const auto manifest =
         inspect_streamed_dense_manifest(manifest_path);
+
+    auto inventory_only_json = manifest_json;
+    inventory_only_json["tensors"][0]["chunks"] = json::array();
+    inventory_only_json["tensors"][1]["chunks"] = json::array();
+    const auto inventory_only_path = root / "dense-inventory-only.json";
+    {
+      std::ofstream out(inventory_only_path);
+      out << inventory_only_json.dump(2) << "\n";
+    }
+    const auto inventory_only =
+        inspect_streamed_dense_manifest(inventory_only_path);
+    require(
+        inventory_only.tensors.size() == 2U &&
+        inventory_only.tensors[0].chunks.empty() &&
+        inventory_only.tensors[1].chunks.empty(),
+        "inventory-only manifest must allow zero fetched chunks");
+
     const auto plan = fixture_plan();
     const auto quantization =
         QpackExpertQuantizationSpec{.bits = 4U, .group_size = 4U};

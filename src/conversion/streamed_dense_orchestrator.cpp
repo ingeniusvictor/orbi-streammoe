@@ -235,8 +235,7 @@ StreamedDenseManifest inspect_streamed_dense_manifest(
 
   std::vector<std::string> names;
   for (const auto& tensor : out.tensors) {
-    if (tensor.source_tensor.empty() || tensor.source_shape.empty() ||
-        tensor.chunks.empty()) {
+    if (tensor.source_tensor.empty() || tensor.source_shape.empty()) {
       throw std::runtime_error(
           "streamed dense orchestrator: malformed tensor entry");
     }

@@ -24,6 +24,15 @@ jobs:
       - name: Verify OSM-39F explicit expert selection
         run: python scripts/test_qwen_expert_range_selection.py
 
+      - name: Verify OSM-40D missing dense row planner
+        run: python scripts/test_qwen_dense_missing_rows.py
+
+      - name: Verify OSM-40D dense stream inventory builder
+        run: python scripts/test_qwen_dense_stream_inventory.py
+
+      - name: Verify OSM-40D dense tooling syntax
+        run: python -m py_compile scripts/build_qwen_dense_stream_inventory.py scripts/plan_qwen_missing_dense_rows.py scripts/fetch_qwen_dense_row_plan.py
+
       - name: Install Linux Vulkan software driver
         if: runner.os == 'Linux'
         run: |
