@@ -93,6 +93,7 @@ add_library(orbi_streammoe_core
   src/conversion/dense_safetensors_conversion.cpp
   src/conversion/streamed_safetensors_builder.cpp
   src/conversion/streamed_dense_orchestrator.cpp
+  src/conversion/full_checkpoint_package.cpp
   src/session/greedy_token_session.cpp
   src/session/text_tokenizer_boundary.cpp
   src/session/greedy_text_session.cpp
@@ -173,6 +174,12 @@ add_executable(orbi_streammoe_streamed_dense_convert
 )
 target_link_libraries(orbi_streammoe_streamed_dense_convert PRIVATE orbi_streammoe_core)
 target_compile_features(orbi_streammoe_streamed_dense_convert PRIVATE cxx_std_20)
+
+add_executable(orbi_streammoe_finalize_full_checkpoint
+  tools/qpack_finalize_full_checkpoint.cpp
+)
+target_link_libraries(orbi_streammoe_finalize_full_checkpoint PRIVATE orbi_streammoe_core)
+target_compile_features(orbi_streammoe_finalize_full_checkpoint PRIVATE cxx_std_20)
 
 if(ORBI_STREAMMOE_BUILD_TESTS)
   enable_testing()
@@ -392,6 +399,12 @@ if(ORBI_STREAMMOE_BUILD_TESTS)
   )
   target_link_libraries(orbi_streammoe_qpack_package_tests PRIVATE orbi_streammoe_core nlohmann_json::nlohmann_json)
   target_compile_features(orbi_streammoe_qpack_package_tests PRIVATE cxx_std_20)
+
+  add_executable(orbi_streammoe_full_checkpoint_package_tests
+    tests/full_checkpoint_package_test.cpp
+  )
+  target_link_libraries(orbi_streammoe_full_checkpoint_package_tests PRIVATE orbi_streammoe_core nlohmann_json::nlohmann_json)
+  target_compile_features(orbi_streammoe_full_checkpoint_package_tests PRIVATE cxx_std_20)
 
   add_executable(orbi_streammoe_official_qpack_package_plan_tests
     tests/official_qpack_package_plan_test.cpp
@@ -638,6 +651,7 @@ if(ORBI_STREAMMOE_BUILD_TESTS)
   add_test(NAME orbi_streammoe_qpack_layer_writer_tests COMMAND orbi_streammoe_qpack_layer_writer_tests)
   add_test(NAME orbi_streammoe_multi_expert_orchestrator_tests COMMAND orbi_streammoe_multi_expert_orchestrator_tests)
   add_test(NAME orbi_streammoe_qpack_package_tests COMMAND orbi_streammoe_qpack_package_tests)
+  add_test(NAME orbi_streammoe_full_checkpoint_package_tests COMMAND orbi_streammoe_full_checkpoint_package_tests)
   add_test(NAME orbi_streammoe_dense_safetensors_conversion_tests COMMAND orbi_streammoe_dense_safetensors_conversion_tests)
   add_test(NAME orbi_streammoe_streamed_safetensors_builder_tests COMMAND orbi_streammoe_streamed_safetensors_builder_tests)
   add_test(NAME orbi_streammoe_streamed_dense_orchestrator_tests COMMAND orbi_streammoe_streamed_dense_orchestrator_tests)
