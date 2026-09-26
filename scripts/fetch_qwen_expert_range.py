@@ -107,6 +107,7 @@ def main() -> int:
     parser.add_argument("--layer", type=int, default=0)
     parser.add_argument("--first-expert", type=int, default=0)
     parser.add_argument("--count", type=int, default=2)
+    parser.add_argument("--experts", help="comma-separated explicit expert IDs")
     parser.add_argument("--hidden-size", type=int, default=2048)
     parser.add_argument("--intermediate-size", type=int, default=512)
     args = parser.parse_args()
@@ -114,15 +115,31 @@ def main() -> int:
     if args.layer < 0 or args.first_expert < 0 or args.count <= 0:
         raise RuntimeError("layer/first-expert/count must define a positive range")
 
+    if args.experts:
+        experts = []
+        seen = set()
+        for item in args.experts.split(","):
+            item = item.strip()
+            if not item:
+                continue
+            expert = int(item)
+            if expert < 0 or expert in seen:
+                raise RuntimeError("explicit expert IDs must be unique non-negative integers")
+            seen.add(expert)
+            experts.append(expert)
+        if not experts:
+            raise RuntimeError("--experts produced an empty expert set")
+    else:
+        experts = list(range(args.first_expert, args.first_expert + args.count))
+
     range_manifest = json.loads(
         pathlib.Path(args.range_manifest).read_text(encoding="utf-8")
     )
     output_root = pathlib.Path(args.output_dir)
     output_root.mkdir(parents=True, exist_ok=True)
 
-    experts = []
     total = 0
-    for expert in range(args.first_expert, args.first_expert + args.count):
+    for expert in experts:
         fetched = fetch_expert(
             range_manifest,
             output_root,
@@ -137,8 +154,8 @@ def main() -> int:
     summary = {
         "schema_version": 1,
         "layer_index": args.layer,
-        "first_expert": args.first_expert,
-        "count": args.count,
+        "first_expert": min(experts),
+        "count": len(experts),
         "experts": experts,
         "total_fetched_bytes": total,
     }
