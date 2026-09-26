@@ -2,6 +2,7 @@
 #include <filesystem>
 #include <iomanip>
 #include <iostream>
+#include <limits>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -18,6 +19,10 @@ namespace {
 std::size_t parse_size(const char* value, const char* label) {
   try {
     const auto parsed = std::stoull(value);
+    if (parsed > static_cast<unsigned long long>(
+                     std::numeric_limits<std::size_t>::max())) {
+      throw std::runtime_error(std::string(label) + " exceeds host size_t");
+    }
     return static_cast<std::size_t>(parsed);
   } catch (...) {
     throw std::runtime_error(std::string("invalid ") + label);
