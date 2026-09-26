@@ -33,6 +33,12 @@ jobs:
       - name: Verify OSM-40D dense tooling syntax
         run: python -m py_compile scripts/build_qwen_dense_stream_inventory.py scripts/plan_qwen_missing_dense_rows.py scripts/fetch_qwen_dense_row_plan.py
 
+      - name: Verify OSM-40E production dense controller
+        run: python scripts/test_qwen_dense_controller.py
+
+      - name: Verify OSM-40E controller syntax
+        run: python -m py_compile scripts/run_qwen_dense_conversion.py scripts/test_qwen_dense_controller.py
+
       - name: Install Linux Vulkan software driver
         if: runner.os == 'Linux'
         run: |
