@@ -4,10 +4,20 @@ import json
 import pathlib
 
 
-def parse_journal(path: pathlib.Path) -> dict:
-    if not path.exists():
-        return {}
-    root = json.loads(path.read_text(encoding="utf-8"))
+def resolve_journal_path(path: pathlib.Path) -> pathlib.Path | None:
+    if path.exists():
+        return path
+    backup = pathlib.Path(str(path) + ".bak")
+    if backup.exists():
+        return backup
+    return None
+
+
+def parse_journal(path: pathlib.Path) -> tuple[dict, pathlib.Path | None]:
+    source = resolve_journal_path(path)
+    if source is None:
+        return {}, None
+    root = json.loads(source.read_text(encoding="utf-8"))
     if root.get("schema_version") != 1:
         raise RuntimeError("unsupported QPACK layer journal schema")
     completed = root.get("completed")
@@ -25,7 +35,7 @@ def parse_journal(path: pathlib.Path) -> dict:
             raise RuntimeError("journal contains invalid expert checksum")
         int(checksum, 16)
         seen.add(expert)
-    return root
+    return root, source
 
 
 def main() -> int:
@@ -48,7 +58,7 @@ def main() -> int:
         raise RuntimeError("invalid requested expert interval")
 
     journal_path = pathlib.Path(args.journal)
-    journal = parse_journal(journal_path)
+    journal, journal_source = parse_journal(journal_path)
     completed = set()
 
     if journal:
@@ -75,6 +85,7 @@ def main() -> int:
         "missing_experts": missing,
         "missing_experts_csv": ",".join(str(v) for v in missing),
         "journal_present": bool(journal),
+        "journal_source": str(journal_source) if journal_source else None,
     }
 
     rendered = json.dumps(plan, indent=2, sort_keys=True) + "\n"
