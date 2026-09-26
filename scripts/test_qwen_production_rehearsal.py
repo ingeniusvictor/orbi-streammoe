@@ -67,8 +67,86 @@ def main() -> int:
         dense_slice = root / "dense-slice"
         expert_slice.mkdir()
         dense_slice.mkdir()
-        (expert_slice / "expert.bin").write_bytes(b"official-expert-slice")
-        (dense_slice / "dense.bin").write_bytes(b"official-dense-slice")
+
+        expert_dir = expert_slice / "expert_000"
+        expert_dir.mkdir()
+        expert_payloads = {
+            "gate_proj.bf16.bin": b"gate-source",
+            "up_proj.bf16.bin": b"up-source",
+            "down_proj.bf16.bin": b"down-source",
+        }
+        for name, payload in expert_payloads.items():
+            (expert_dir / name).write_bytes(payload)
+        write_json(
+            expert_dir / "single-expert.json",
+            {
+                "schema_version": 1,
+                "model": rehearsal.MODEL,
+                "snapshot": rehearsal.SNAPSHOT,
+                "layer_index": 0,
+                "expert_index": 0,
+                "total_fetched_bytes": sum(
+                    len(payload) for payload in expert_payloads.values()
+                ),
+                "projections": {
+                    "gate_proj": {"source_file": "gate_proj.bf16.bin"},
+                    "up_proj": {"source_file": "up_proj.bf16.bin"},
+                    "down_proj": {"source_file": "down_proj.bf16.bin"},
+                },
+            },
+        )
+        write_json(
+            expert_slice / "expert-range.json",
+            {
+                "schema_version": 1,
+                "layer_index": 0,
+                "first_expert": 0,
+                "count": 1,
+                "experts": [0],
+                "total_fetched_bytes": sum(
+                    len(payload) for payload in expert_payloads.values()
+                ),
+            },
+        )
+
+        dense_payloads = {
+            "model_norm_weight.bf16.bin": b"norm-source",
+            "model_layers_0_mlp_shared_expert_gate_weight.bf16.bin": (
+                b"shared-gate-source"
+            ),
+        }
+        for name, payload in dense_payloads.items():
+            (dense_slice / name).write_bytes(payload)
+        write_json(
+            dense_slice / "dense-pilot.json",
+            {
+                "schema_version": 1,
+                "model": rehearsal.MODEL,
+                "snapshot": rehearsal.SNAPSHOT,
+                "tensors": [
+                    {
+                        "source_tensor": "model.norm.weight",
+                        "source_byte_size": len(
+                            dense_payloads["model_norm_weight.bf16.bin"]
+                        ),
+                        "source_file": "model_norm_weight.bf16.bin",
+                    },
+                    {
+                        "source_tensor": (
+                            "model.layers.0.mlp.shared_expert_gate.weight"
+                        ),
+                        "source_byte_size": len(
+                            dense_payloads[
+                                "model_layers_0_mlp_shared_expert_gate_weight.bf16.bin"
+                            ]
+                        ),
+                        "source_file": (
+                            "model_layers_0_mlp_shared_expert_gate_weight.bf16.bin"
+                        ),
+                    },
+                ],
+            },
+        )
 
         out = root / "rehearsal"
         result = rehearsal.build_rehearsal(
