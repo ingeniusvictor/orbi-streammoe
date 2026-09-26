@@ -1,4 +1,6 @@
+#include <algorithm>
 #include <cstddef>
+#include <iostream>
 #include <optional>
 #include <span>
 #include <stdexcept>
@@ -68,9 +70,11 @@ class FixtureTokenizer final : public Tokenizer {
     if (fail_decode) {
       return {false, {}, "fixture decode failure"};
     }
-    if (token_ids != std::span<const std::size_t>(
-            expected_generated_.data(),
-            expected_generated_.size())) {
+    if (token_ids.size() != expected_generated_.size() ||
+        !std::equal(
+            token_ids.begin(),
+            token_ids.end(),
+            expected_generated_.begin())) {
       return {false, {}, "unexpected fixture generated tokens"};
     }
 
