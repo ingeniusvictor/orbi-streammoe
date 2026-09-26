@@ -1,6 +1,7 @@
 #include "orbi/streammoe/tokenizer/qwen_tokenizer_assets.hpp"
 
 #include <algorithm>
+#include <exception>
 #include <fstream>
 #include <limits>
 #include <string>
