@@ -28,14 +28,15 @@ int main(int argc, char** argv) {
     require(plan.count(QpackConversionClass::global_dense) == 3U,
             "official global tensor count mismatch");
     require(
-        plan.count(QpackConversionAction::split_packed_gate_up_experts) == 48U,
-        "official packed gate/up inventory mismatch");
+        plan.count(QpackConversionAction::split_packed_gate_up_experts) == 0U,
+        "official checkpoint unexpectedly uses packed gate/up experts");
     require(
-        plan.count(QpackConversionAction::split_packed_down_experts) == 48U,
-        "official packed down inventory mismatch");
+        plan.count(QpackConversionAction::split_packed_down_experts) == 0U,
+        "official checkpoint unexpectedly uses packed down experts");
     require(
-        plan.count(QpackConversionAction::direct_expert_quantize) == 0U,
-        "official checkpoint unexpectedly uses direct expert tensors");
+        plan.count(QpackConversionAction::direct_expert_quantize) ==
+            48U * 512U * 3U,
+        "official direct expert tensor inventory mismatch");
     require(
         plan.count(QpackConversionClass::auxiliary_mtp) > 0U,
         "official checkpoint MTP auxiliary inventory missing");
@@ -62,6 +63,9 @@ int main(int argc, char** argv) {
         << "\n"
         << "  packed_down="
         << plan.count(QpackConversionAction::split_packed_down_experts)
+        << "\n"
+        << "  direct_expert_tensors="
+        << plan.count(QpackConversionAction::direct_expert_quantize)
         << "\n";
     return 0;
   } catch (const std::exception& e) {
