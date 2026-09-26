@@ -42,11 +42,14 @@ jobs:
       - name: Fetch bounded official dense/global pilot
         run: python scripts/fetch_qwen_dense_pilot.py --range-manifest build/qwen-official-range-manifest.json --output-dir build/qwen-official-dense-pilot
 
+      - name: Fetch bounded official global matrix rows
+        run: python scripts/fetch_qwen_global_row_chunks.py --range-manifest build/qwen-official-range-manifest.json --output-dir build/qwen-official-global-rows --rows 2
+
       - name: Configure
         run: cmake -S . -B build/cmake -DORBI_STREAMMOE_BUILD_TESTS=ON
 
       - name: Build official checkpoint probes
-        run: cmake --build build/cmake --config Release --target orbi_streammoe_official_checkpoint_metadata_tests orbi_streammoe_official_shard_range_tests orbi_streammoe_official_conversion_slice_tests orbi_streammoe_official_qpack_conversion_plan_tests orbi_streammoe_official_qpack_expert_geometry_tests orbi_streammoe_official_single_expert_conversion_tests orbi_streammoe_official_multi_expert_conversion_tests orbi_streammoe_official_qpack_package_plan_tests orbi_streammoe_official_dense_conversion_tests
+        run: cmake --build build/cmake --config Release --target orbi_streammoe_official_checkpoint_metadata_tests orbi_streammoe_official_shard_range_tests orbi_streammoe_official_conversion_slice_tests orbi_streammoe_official_qpack_conversion_plan_tests orbi_streammoe_official_qpack_expert_geometry_tests orbi_streammoe_official_single_expert_conversion_tests orbi_streammoe_official_multi_expert_conversion_tests orbi_streammoe_official_qpack_package_plan_tests orbi_streammoe_official_dense_conversion_tests orbi_streammoe_official_streamed_global_rows_tests
 
       - name: Verify official Qwen checkpoint metadata
         run: build/cmake/Release/orbi_streammoe_official_checkpoint_metadata_tests.exe build/qwen-official-metadata
@@ -118,4 +121,12 @@ jobs:
 
       - name: Verify official bounded dense/global conversion
         run: build/cmake/orbi_streammoe_official_dense_conversion_tests build/qwen-official-metadata build/qwen-official-dense-pilot
+        if: runner.os == 'Linux'
+
+      - name: Verify official streamed global matrix rows
+        run: build/cmake/Release/orbi_streammoe_official_streamed_global_rows_tests.exe build/qwen-official-metadata build/qwen-official-global-rows
+        if: runner.os == 'Windows'
+
+      - name: Verify official streamed global matrix rows
+        run: build/cmake/orbi_streammoe_official_streamed_global_rows_tests build/qwen-official-metadata build/qwen-official-global-rows
         if: runner.os == 'Linux'
