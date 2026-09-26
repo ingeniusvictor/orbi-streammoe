@@ -479,6 +479,37 @@ def _validate_existing_completion(
     ):
         raise RuntimeError("completion receipt package digest is malformed")
 
+    package_manifest = package.get("package_manifest")
+    declared_files = package.get("declared_files")
+    dense_journal = package.get("dense_journal")
+    if (
+        not isinstance(package_manifest, dict)
+        or not isinstance(declared_files, dict)
+        or not isinstance(dense_journal, dict)
+    ):
+        raise RuntimeError("completion receipt package evidence is malformed")
+    expected_package_digest = canonical_digest(
+        {
+            "package_manifest": package_manifest,
+            "declared_files": declared_files,
+            "dense_journal": dense_journal,
+        }
+    )
+    if package["package_digest_sha256"] != expected_package_digest:
+        raise RuntimeError("completion receipt package digest binding failed")
+    if package.get("declared_file_count") != len(declared_files):
+        raise RuntimeError("completion receipt declared file count disagrees")
+    declared_bytes = 0
+    for relative_name, evidence in declared_files.items():
+        if not isinstance(relative_name, str) or not isinstance(evidence, dict):
+            raise RuntimeError("completion receipt declared file evidence is malformed")
+        value = evidence.get("declared_bytes")
+        if type(value) is not int or value < 0:
+            raise RuntimeError("completion receipt declared byte evidence is malformed")
+        declared_bytes += value
+    if package.get("declared_file_bytes") != declared_bytes:
+        raise RuntimeError("completion receipt declared byte total disagrees")
+
 
 def sync_production_audit(
     manifest_path: pathlib.Path,
