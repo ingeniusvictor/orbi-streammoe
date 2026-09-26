@@ -47,6 +47,7 @@ fs::path write_fixture(const fs::path& root) {
         "padding":null,
         "added_tokens":[
           {"id":10,"content":"<|endoftext|>","single_word":false,"lstrip":false,"rstrip":false,"normalized":false,"special":true},
+          {"id":11,"content":"<|im_start|>","single_word":false,"lstrip":false,"rstrip":false,"normalized":false,"special":true},
           {"id":12,"content":"<|im_end|>","single_word":false,"lstrip":false,"rstrip":false,"normalized":false,"special":true}
         ],
         "normalizer":{"type":"NFC"},
@@ -67,7 +68,7 @@ fs::path write_fixture(const fs::path& root) {
           "end_of_word_suffix":null,
           "fuse_unk":false,
           "byte_fallback":false,
-          "vocab":{"a":0,"b":1},
+          "vocab":{"a":0,"b":1,"c":2,"d":3,"e":4,"f":5,"g":6,"h":7,"i":8,"j":9},
           "merges":[]
         }
       })");
