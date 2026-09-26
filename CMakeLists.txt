@@ -162,6 +162,18 @@ add_executable(orbi_streammoe_qpack_finalize_experts
 target_link_libraries(orbi_streammoe_qpack_finalize_experts PRIVATE orbi_streammoe_core)
 target_compile_features(orbi_streammoe_qpack_finalize_experts PRIVATE cxx_std_20)
 
+add_executable(orbi_streammoe_qpack_list_dense_sources
+  tools/qpack_list_dense_sources.cpp
+)
+target_link_libraries(orbi_streammoe_qpack_list_dense_sources PRIVATE orbi_streammoe_core nlohmann_json::nlohmann_json)
+target_compile_features(orbi_streammoe_qpack_list_dense_sources PRIVATE cxx_std_20)
+
+add_executable(orbi_streammoe_streamed_dense_convert
+  tools/streamed_dense_convert.cpp
+)
+target_link_libraries(orbi_streammoe_streamed_dense_convert PRIVATE orbi_streammoe_core)
+target_compile_features(orbi_streammoe_streamed_dense_convert PRIVATE cxx_std_20)
+
 if(ORBI_STREAMMOE_BUILD_TESTS)
   enable_testing()
 
