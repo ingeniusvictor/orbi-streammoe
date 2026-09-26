@@ -23,6 +23,7 @@ void set_diagnostic(std::string* target, std::string value) {
   if (target != nullptr) *target = std::move(value);
 }
 
+#if defined(ORBI_STREAMMOE_HAS_TOKENIZERS_CPP)
 std::optional<std::string> read_blob(
     const std::filesystem::path& path,
     std::string* diagnostic) {
@@ -38,6 +39,7 @@ std::optional<std::string> read_blob(
       std::istreambuf_iterator<char>(input),
       std::istreambuf_iterator<char>());
 }
+#endif
 
 }  // namespace
 
