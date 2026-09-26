@@ -202,7 +202,7 @@ TokenizerEncodeResult QwenTokenizersCppTokenizer::encode(
     return out;
   }
 
-  TokenizerEncodeResult raw{};
+  ::TokenizerEncodeResult raw{};
   tokenizers_encode(
       impl_->handle,
       text.data(),
