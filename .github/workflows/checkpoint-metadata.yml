@@ -141,3 +141,24 @@ jobs:
 
       - name: Verify official OSM-40D dense source inventory
         run: python scripts/test_qwen_dense_source_inventory.py build/qwen-official-dense-sources.json
+
+      - name: Fetch official production dense tensor headers
+        run: python scripts/fetch_qwen_shard_headers.py --metadata-dir build/qwen-official-metadata --tensor-list-json build/qwen-official-dense-sources.json --output build/qwen-official-production-ranges.json
+
+      - name: Build official dense stream inventory
+        run: python scripts/build_qwen_dense_stream_inventory.py --dense-sources-json build/qwen-official-dense-sources.json --range-manifest build/qwen-official-production-ranges.json --output build/qwen-official-dense-stream-inventory.json
+
+      - name: Rehearse OSM-42A production operator
+        if: runner.os == 'Windows'
+        run: python scripts/rehearse_qwen_production.py --metadata-dir build/qwen-official-metadata --dense-inventory build/qwen-official-dense-stream-inventory.json --expert-slice-dir build/qwen-official-expert-range --dense-slice-dir build/qwen-official-dense-pilot --output-dir build/qwen-osm42a-rehearsal --bin-dir build/cmake/Release
+
+      - name: Rehearse OSM-42A production operator
+        if: runner.os == 'Linux'
+        run: python scripts/rehearse_qwen_production.py --metadata-dir build/qwen-official-metadata --dense-inventory build/qwen-official-dense-stream-inventory.json --expert-slice-dir build/qwen-official-expert-range --dense-slice-dir build/qwen-official-dense-pilot --output-dir build/qwen-osm42a-rehearsal --bin-dir build/cmake
+
+      - name: Upload OSM-42A rehearsal evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: osm-42a-production-rehearsal-${{ runner.os }}
+          path: build/qwen-osm42a-rehearsal
+          if-no-files-found: error
