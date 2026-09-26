@@ -189,7 +189,7 @@ int main() {
 
     make_fixture(root);
     auto bad_index = make_index();
-    const auto needle = "model-00002-of-00002.safetensors";
+    const std::string needle = "model-00002-of-00002.safetensors";
     const auto pos = bad_index.find(needle);
     require(pos != std::string::npos, "fixture shard not found");
     bad_index.replace(pos, needle.size(), "bad-shard.bin");
