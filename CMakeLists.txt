@@ -291,6 +291,12 @@ if(ORBI_STREAMMOE_BUILD_TESTS)
   target_link_libraries(orbi_streammoe_tokenizers_cpp_qwen_tokenizer_tests PRIVATE orbi_streammoe_core)
   target_compile_features(orbi_streammoe_tokenizers_cpp_qwen_tokenizer_tests PRIVATE cxx_std_20)
 
+  add_executable(orbi_streammoe_qwen_official_tokenizer_parity_tests
+    tests/qwen_official_tokenizer_parity_test.cpp
+  )
+  target_link_libraries(orbi_streammoe_qwen_official_tokenizer_parity_tests PRIVATE orbi_streammoe_core nlohmann_json::nlohmann_json)
+  target_compile_features(orbi_streammoe_qwen_official_tokenizer_parity_tests PRIVATE cxx_std_20)
+
   add_executable(orbi_streammoe_cpu_reference_tests
     tests/cpu_reference_test.cpp
   )
@@ -460,6 +466,7 @@ if(ORBI_STREAMMOE_BUILD_TESTS)
   add_test(NAME orbi_streammoe_greedy_text_session_tests COMMAND orbi_streammoe_greedy_text_session_tests)
   add_test(NAME orbi_streammoe_qwen_tokenizer_assets_tests COMMAND orbi_streammoe_qwen_tokenizer_assets_tests)
   add_test(NAME orbi_streammoe_tokenizers_cpp_qwen_tokenizer_tests COMMAND orbi_streammoe_tokenizers_cpp_qwen_tokenizer_tests)
+  add_test(NAME orbi_streammoe_qwen_official_tokenizer_parity_tests COMMAND orbi_streammoe_qwen_official_tokenizer_parity_tests)
   add_test(NAME orbi_streammoe_cpu_reference_tests COMMAND orbi_streammoe_cpu_reference_tests)
   add_test(NAME orbi_streammoe_expert_cache_tests COMMAND orbi_streammoe_expert_cache_tests)
   add_test(NAME orbi_streammoe_qwen_router_tests COMMAND orbi_streammoe_qwen_router_tests)

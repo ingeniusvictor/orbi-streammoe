@@ -8,7 +8,10 @@ on:
       - "include/orbi/streammoe/tokenizer/**"
       - "src/tokenizer/**"
       - "tests/tokenizers_cpp_qwen_tokenizer_test.cpp"
+      - "tests/qwen_official_tokenizer_parity_test.cpp"
+      - "scripts/qwen_tokenizer_reference.py"
       - "docs/OSM-37B-TOKENIZERS-CPP-ADAPTER.md"
+      - "docs/OSM-37C-OFFICIAL-QWEN-TOKENIZER-PARITY.md"
   push:
     branches: [main]
     paths:
@@ -17,7 +20,10 @@ on:
       - "include/orbi/streammoe/tokenizer/**"
       - "src/tokenizer/**"
       - "tests/tokenizers_cpp_qwen_tokenizer_test.cpp"
+      - "tests/qwen_official_tokenizer_parity_test.cpp"
+      - "scripts/qwen_tokenizer_reference.py"
       - "docs/OSM-37B-TOKENIZERS-CPP-ADAPTER.md"
+      - "docs/OSM-37C-OFFICIAL-QWEN-TOKENIZER-PARITY.md"
 
 jobs:
   tokenizers-cpp:
@@ -37,11 +43,23 @@ jobs:
           rustc --version
           cargo --version
 
+      - name: Install pinned Python tokenizer oracle
+        run: python -m pip install tokenizers==0.22.1
+
+      - name: Generate official Qwen parity vectors
+        run: python scripts/qwen_tokenizer_reference.py --asset-dir .orbi-qwen-tokenizer --output .orbi-qwen-tokenizer/parity.json
+
       - name: Configure optional tokenizer backend
         run: cmake -S . -B build-tokenizer -DORBI_STREAMMOE_BUILD_TESTS=ON -DORBI_STREAMMOE_ENABLE_TOKENIZERS_CPP=ON
 
-      - name: Build tokenizer adapter test
-        run: cmake --build build-tokenizer --config Release --target orbi_streammoe_tokenizers_cpp_qwen_tokenizer_tests
+      - name: Build tokenizer adapter tests
+        run: cmake --build build-tokenizer --config Release --target orbi_streammoe_tokenizers_cpp_qwen_tokenizer_tests orbi_streammoe_qwen_official_tokenizer_parity_tests
 
       - name: Test tokenizer adapter
         run: ctest --test-dir build-tokenizer -C Release -R orbi_streammoe_tokenizers_cpp_qwen_tokenizer_tests --output-on-failure -V
+
+      - name: Test official Qwen tokenizer parity
+        env:
+          ORBI_QWEN_TOKENIZER_ASSET_ROOT: ${{ github.workspace }}/.orbi-qwen-tokenizer
+          ORBI_QWEN_TOKENIZER_PARITY_JSON: ${{ github.workspace }}/.orbi-qwen-tokenizer/parity.json
+        run: ctest --test-dir build-tokenizer -C Release -R orbi_streammoe_qwen_official_tokenizer_parity_tests --output-on-failure -V
