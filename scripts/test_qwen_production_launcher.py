@@ -30,6 +30,42 @@ def write_json(path: pathlib.Path, payload: dict) -> None:
     )
 
 
+def write_fake_full_package(manifest_path: pathlib.Path) -> None:
+    execution = json.loads(manifest_path.read_text(encoding="utf-8"))
+    output = pathlib.Path(execution["target"]["output_dir"])
+    journal = pathlib.Path(execution["target"]["dense_journal"])
+    payloads = {
+        "config.json": b'{"model_type":"qwen3_next"}\\n',
+        "conversion-provenance.json": b'{"stage":"expert-shell"}\\n',
+        "packed_experts/layout.json": b'{"layerCount":1}\\n',
+        "packed_experts/layer_00.bin": b"expert-payload-fixture",
+        "model.safetensors": b"dense-payload-fixture",
+        "full-checkpoint-provenance.json": b'{"stage":"full-checkpoint"}\\n',
+    }
+    for relative, payload in payloads.items():
+        path = output / pathlib.Path(relative)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(payload)
+    write_json(journal, {"schema_version": 1, "complete": True})
+    write_json(
+        output / "manifest.json",
+        {
+            "magic": "QPACK",
+            "version": 1,
+            "modelName": "qwen3_next",
+            "sourceCheckpoint": execution["source"]["model"],
+            "sourceSnapshot": execution["source"]["snapshot"],
+            "quantBits": 4,
+            "quantGroupSize": 64,
+            "packageStage": "full-checkpoint",
+            "files": {
+                relative: len(payload)
+                for relative, payload in payloads.items()
+            },
+        },
+    )
+
+
 def manifest_fixture(root: pathlib.Path) -> pathlib.Path:
     path = root / "execution.json"
     payload = {
@@ -97,6 +133,8 @@ def fake_phase_executor(
         raise RuntimeError("fixture executor must not receive dry_run")
     state, _ = load_state(state_path)
     ensure_phase_can_run(state, phase)
+    if phase == "full_checkpoint":
+        write_fake_full_package(manifest_path)
     phase_state = state["phases"][phase]
     phase_state["status"] = "completed"
     phase_state["attempts"] += 1
