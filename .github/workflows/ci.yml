@@ -140,5 +140,6 @@ jobs:
           ctest --test-dir build -C Release -R orbi_streammoe_checkpoint_decoder_stack_tests --output-on-failure -V
           ctest --test-dir build -C Release -R orbi_streammoe_checkpoint_model_shell_tests --output-on-failure -V
           ctest --test-dir build -C Release -R orbi_streammoe_greedy_token_session_tests --output-on-failure -V
+          ctest --test-dir build -C Release -R orbi_streammoe_greedy_text_session_tests --output-on-failure -V
           ctest --test-dir build -C Release -R orbi_streammoe_checkpoint_deltanet_sublayer_tests --output-on-failure -V
           ctest --test-dir build -C Release -R orbi_streammoe_checkpoint_linear_decoder_layer_tests --output-on-failure -V
