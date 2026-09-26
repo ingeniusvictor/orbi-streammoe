@@ -24,11 +24,14 @@ jobs:
       - name: Fetch strict official safetensors shard headers
         run: python scripts/fetch_qwen_shard_headers.py --metadata-dir build/qwen-official-metadata --output build/qwen-official-range-manifest.json
 
+      - name: Fetch bounded official BF16 conversion slice
+        run: python scripts/fetch_qwen_conversion_slice.py --range-manifest build/qwen-official-range-manifest.json --output-dir build/qwen-official-conversion-slice
+
       - name: Configure
         run: cmake -S . -B build/cmake -DORBI_STREAMMOE_BUILD_TESTS=ON
 
       - name: Build official checkpoint probes
-        run: cmake --build build/cmake --config Release --target orbi_streammoe_official_checkpoint_metadata_tests orbi_streammoe_official_shard_range_tests
+        run: cmake --build build/cmake --config Release --target orbi_streammoe_official_checkpoint_metadata_tests orbi_streammoe_official_shard_range_tests orbi_streammoe_official_conversion_slice_tests
 
       - name: Verify official Qwen checkpoint metadata
         run: build/cmake/Release/orbi_streammoe_official_checkpoint_metadata_tests.exe build/qwen-official-metadata
@@ -44,4 +47,12 @@ jobs:
 
       - name: Verify official Qwen shard header ranges
         run: build/cmake/orbi_streammoe_official_shard_range_tests build/qwen-official-metadata build/qwen-official-range-manifest.json
+        if: runner.os == 'Linux'
+
+      - name: Verify official Qwen BF16 conversion slice
+        run: build/cmake/Release/orbi_streammoe_official_conversion_slice_tests.exe build/qwen-official-conversion-slice
+        if: runner.os == 'Windows'
+
+      - name: Verify official Qwen BF16 conversion slice
+        run: build/cmake/orbi_streammoe_official_conversion_slice_tests build/qwen-official-conversion-slice
         if: runner.os == 'Linux'
