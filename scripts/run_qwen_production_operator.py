@@ -132,7 +132,7 @@ def write_state(path: pathlib.Path, payload: dict) -> None:
         backup.unlink()
 
 
-def load_state(path: pathlib.Path) -> tuple[dict, pathlib.Path]:
+def load_state(path: pathlib.Path, *, recover: bool = True) -> tuple[dict, pathlib.Path]:
     source = resolve_state_path(path)
     if not source.exists():
         raise RuntimeError(f"operator state does not exist: {path}")
@@ -144,7 +144,7 @@ def load_state(path: pathlib.Path) -> tuple[dict, pathlib.Path]:
     phases = state.get("phases")
     if not isinstance(phases, dict) or set(phases) != set(PHASES):
         raise RuntimeError("operator state phases are malformed")
-    if source != path:
+    if source != path and recover:
         write_state(path, state)
         source.unlink(missing_ok=True)
         source = path
@@ -292,9 +292,11 @@ def run_phase(
 def status(
     manifest_path: pathlib.Path,
     state_path: pathlib.Path,
+    *,
+    recover: bool = True,
 ) -> dict:
     manifest = load_json(manifest_path)
-    state, _ = load_state(state_path)
+    state, _ = load_state(state_path, recover=recover)
     validate_state_binding(state, manifest_path, manifest)
     return phase_report(state)
 

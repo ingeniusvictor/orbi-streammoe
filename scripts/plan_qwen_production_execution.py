@@ -205,7 +205,7 @@ def build_manifest(args) -> dict:
     return payload
 
 
-def main() -> int:
+def create_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser()
     parser.add_argument("--metadata-dir", required=True)
     parser.add_argument("--dense-inventory", required=True)
@@ -224,7 +224,11 @@ def main() -> int:
     parser.add_argument("--max-chunks", type=int)
     parser.add_argument("--max-batch-source-bytes", type=int, required=True)
     parser.add_argument("--min-free-disk-bytes", type=int, default=0)
-    args = parser.parse_args()
+    return parser
+
+
+def main() -> int:
+    args = create_parser().parse_args()
 
     if args.group_size <= 0:
         raise RuntimeError("group_size must be positive")

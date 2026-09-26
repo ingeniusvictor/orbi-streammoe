@@ -5,6 +5,12 @@ import pathlib
 import sys
 from typing import Callable
 
+from plan_qwen_production_execution import (
+    build_manifest,
+    create_parser as create_preflight_parser,
+    write_immutable as write_manifest,
+)
+
 from build_qwen_production_commands import (
     build_phase_commands,
     write_immutable as write_command_plan,
@@ -26,6 +32,32 @@ def state_exists(path: pathlib.Path) -> bool:
     return path.exists() or state_backup_path(path).exists()
 
 
+def prepare_manifest(manifest_path: pathlib.Path, preflight_path: pathlib.Path) -> None:
+    """Create/reuse OSM-41A authorization using its existing CLI validation."""
+    request = json.loads(preflight_path.read_text(encoding="utf-8"))
+    if not isinstance(request, dict):
+        raise RuntimeError("preflight request must be a JSON object")
+    parser = create_preflight_parser()
+    options = {
+        action.dest: action.option_strings[0]
+        for action in parser._actions
+        if action.dest not in {"help", "manifest"}
+    }
+    argv = ["--manifest", str(manifest_path)]
+    for key, value in request.items():
+        if key not in options or type(value) not in {str, int}:
+            raise RuntimeError(f"invalid preflight field: {key}")
+        argv.append(f"{options[key]}={value}")
+    args = parser.parse_args(argv)
+    if args.group_size <= 0 or (args.max_chunks is not None and args.max_chunks <= 0):
+        raise RuntimeError("group_size and max_chunks must be positive")
+    write_manifest(manifest_path, build_manifest(args))
+
+
+def default_command_plan(state_path: pathlib.Path) -> pathlib.Path:
+    return pathlib.Path(str(state_path) + ".commands.json")
+
+
 def build_launcher_context(
     manifest_path: pathlib.Path,
     state_path: pathlib.Path,
@@ -41,11 +73,13 @@ def build_launcher_context(
         scripts_dir,
         python_executable,
     )
+    if command_plan_path is None and default_command_plan(state_path).exists():
+        command_plan_path = default_command_plan(state_path)
     if command_plan_path is not None:
         write_command_plan(command_plan_path, plan)
 
     if state_exists(state_path):
-        report = status(manifest_path, state_path)
+        report = status(manifest_path, state_path, recover=False)
         initialized = True
     else:
         report = {
@@ -100,6 +134,7 @@ def execute_next(
     command_plan_path: pathlib.Path | None = None,
     phase_executor: Callable = run_phase,
 ) -> dict:
+    command_plan_path = command_plan_path or default_command_plan(state_path)
     plan, _ = build_launcher_context(
         manifest_path, state_path, bin_dir, scripts_dir,
         python_executable, command_plan_path,
@@ -146,6 +181,7 @@ def execute_all(
     if max_phases is not None and max_phases <= 0:
         raise RuntimeError("max_phases must be positive")
 
+    command_plan_path = command_plan_path or default_command_plan(state_path)
     plan, _ = build_launcher_context(
         manifest_path, state_path, bin_dir, scripts_dir,
         python_executable, command_plan_path,
@@ -184,6 +220,7 @@ def execute_all(
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--manifest", required=True)
+    parser.add_argument("--preflight", help="JSON request for immutable OSM-41A manifest creation/reuse")
     parser.add_argument("--state", required=True)
     parser.add_argument("--bin-dir", required=True)
     parser.add_argument(
@@ -204,6 +241,9 @@ def main() -> int:
     bin_dir = pathlib.Path(args.bin_dir)
     scripts_dir = pathlib.Path(args.scripts_dir)
     command_plan = pathlib.Path(args.command_plan) if args.command_plan else None
+
+    if args.preflight:
+        prepare_manifest(manifest, pathlib.Path(args.preflight))
 
     if args.action == "preview":
         result = preview(

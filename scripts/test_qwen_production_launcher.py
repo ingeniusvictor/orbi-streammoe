@@ -2,6 +2,10 @@
 import json
 import pathlib
 import tempfile
+import subprocess
+import sys
+
+from run_qwen_production_operator import state_backup_path
 
 from run_qwen_production_operator import (
     ensure_phase_can_run,
@@ -13,6 +17,8 @@ from launch_qwen_production import (
     execute_all,
     execute_next,
     preview,
+    prepare_manifest,
+    default_command_plan,
 )
 
 
@@ -104,11 +110,134 @@ def fake_phase_executor(
     return phase_report(state)
 
 
+def expect_failure(fn, label):
+    try:
+        fn()
+    except RuntimeError:
+        return
+    raise RuntimeError(f"expected failure: {label}")
+
+
+def verify_real_execution(root: pathlib.Path) -> None:
+    # The real command builder, launcher, durable runner and OS subprocess
+    # are used together; only the expensive conversion controller is a fixture.
+    root.mkdir()
+    manifest = manifest_fixture(root)
+    state = root / "operator-state.json"
+    plan = root / "commands.json"
+    scripts = root / "scripts with spaces"
+    scripts.mkdir()
+    fixture = scripts / "run_qwen_expert_conversion.py"
+    fixture.write_text(
+        "import json, pathlib, sys\n"
+        "root = pathlib.Path(__file__).parent\n"
+        "(root / 'argv.json').write_text(json.dumps(sys.argv[1:]), encoding='utf-8')\n"
+        "sys.exit(7 if (root / 'fail').exists() else 0)\n",
+        encoding="utf-8",
+    )
+    # Shell metacharacters must remain literal argv, including on Windows.
+    binary_dir = root / "bin & literal"
+    args = (manifest, state, binary_dir, scripts, sys.executable, plan)
+    expected = preview(*args)["phase_command"]
+    marker = scripts / "fail"
+    marker.touch()
+    expect_failure(lambda: execute_all(*args), "real subprocess failure")
+    durable, _ = load_state(state)
+    phase = durable["phases"]["expert_conversion"]
+    if phase["status"] != "failed" or phase["last_exit_code"] != 7:
+        raise RuntimeError("subprocess failure not durably recorded")
+    if durable["phases"]["expert_finalization"]["attempts"] != 0:
+        raise RuntimeError("launcher advanced beyond failed conversion")
+    received = json.loads((scripts / "argv.json").read_text(encoding="utf-8"))
+    if received != expected[2:]:
+        raise RuntimeError("OS subprocess did not receive exact generated argv")
+    if phase["last_command"] != expected:
+        raise RuntimeError("durable command differs from command plan")
+
+    # Backup-only preview must inspect without restoring or deleting any file.
+    backup = state_backup_path(state)
+    state.replace(backup)
+    before = backup.read_bytes()
+    report = preview(*args)
+    if report["next_phase"] != "expert_conversion":
+        raise RuntimeError("backup preview chose wrong phase")
+    if state.exists() or backup.read_bytes() != before:
+        raise RuntimeError("backup-only preview mutated durable state")
+
+    # The CLI preview has the same read-only contract.
+    command = [sys.executable, str(pathlib.Path(__file__).with_name("launch_qwen_production.py")),
+               "--manifest", str(manifest), "--state", str(state),
+               "--bin-dir", str(binary_dir), "--scripts-dir", str(scripts), "preview"]
+    completed = subprocess.run(command, check=True, capture_output=True, text=True)
+    if json.loads(completed.stdout)["mutated_state"] or state.exists():
+        raise RuntimeError("CLI preview restored backup")
+    marker.unlink()
+    retried = execute_next(*args)
+    if retried["next_phase"] != "expert_finalization":
+        raise RuntimeError("real retry did not advance exactly one phase")
+    durable, _ = load_state(state)
+    if durable["phases"]["expert_conversion"]["attempts"] != 2 or backup.exists():
+        raise RuntimeError("real retry/backup recovery mismatch")
+
+    # Simulate interruption immediately after the durable running transition.
+    durable["phases"]["expert_conversion"]["status"] = "running"
+    write_state(state, durable)
+    execute_next(*args)
+    durable, _ = load_state(state)
+    if durable["phases"]["expert_conversion"]["interrupted_retries"] != 1:
+        raise RuntimeError("interrupted execution was not tracked")
+
+    before = state.read_bytes()
+    expect_failure(lambda: execute_next(manifest, state, root / "changed-bin", scripts,
+                                       sys.executable, plan), "immutable command plan conflict")
+    if state.read_bytes() != before:
+        raise RuntimeError("command conflict changed durable state")
+    manifest.write_text(manifest.read_text(encoding="utf-8") + " ", encoding="utf-8")
+    expect_failure(lambda: preview(manifest, state, binary_dir, scripts, sys.executable),
+                   "manifest byte binding")
+    if state.read_bytes() != before:
+        raise RuntimeError("manifest conflict changed durable state")
+
+
+def verify_preflight_and_default_plan(root: pathlib.Path) -> None:
+    from test_qwen_production_execution import fixture_args
+    request = vars(fixture_args(root))
+    manifest = pathlib.Path(request.pop("manifest"))
+    preflight = root / "preflight.json"
+    state = root / "state.json"
+    write_json(preflight, request)
+    prepare_manifest(manifest, preflight)
+    before = manifest.read_bytes()
+    prepare_manifest(manifest, preflight)
+    if manifest.read_bytes() != before:
+        raise RuntimeError("manifest reuse changed authorization")
+    request["chunk_rows"] += 1
+    write_json(preflight, request)
+    expect_failure(lambda: prepare_manifest(manifest, preflight), "preflight conflict")
+    if manifest.read_bytes() != before:
+        raise RuntimeError("conflicting preflight changed manifest")
+    args = (manifest, state, root / "bin", root / "scripts", sys.executable)
+    preview(*args)
+    if state.exists() or default_command_plan(state).exists():
+        raise RuntimeError("default preview created durable files")
+    execute_next(*args, phase_executor=fake_phase_executor)
+    if not default_command_plan(state).exists():
+        raise RuntimeError("execution did not persist default command plan")
+    before_state = state.read_bytes()
+    expect_failure(lambda: execute_next(manifest, state, root / "different-bin",
+                                       root / "scripts", sys.executable,
+                                       phase_executor=fake_phase_executor), "default plan conflict")
+    if state.read_bytes() != before_state:
+        raise RuntimeError("default plan conflict mutated state")
+
+
 def main() -> int:
     with tempfile.TemporaryDirectory(
         prefix="orbi-streammoe-osm41e-"
     ) as temp:
         root = pathlib.Path(temp)
+        verify_real_execution(root / "real subprocess")
+        verify_preflight_and_default_plan(root / "preflight")
         manifest = manifest_fixture(root)
         state = root / "operator-state.json"
         command_plan = root / "command-plan.json"
@@ -196,6 +325,9 @@ def main() -> int:
 
         print(
             "OSM-41E one-command production launcher: PASS\n"
+            "  real_subprocess_failure_resume_exact_argv=PASS\n"
+            "  backup_only_preview_read_only=PASS\n"
+            "  interrupted_resume_and_conflict_guards=PASS\n"
             "  preview_no_state_mutation=PASS\n"
             "  immutable_command_plan_reuse=PASS\n"
             "  next_phase_execution=PASS\n"
