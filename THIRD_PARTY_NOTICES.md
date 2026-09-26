@@ -45,3 +45,16 @@ CI compiler version used for OSM-10 development: 16.6.x series
 License: BSD-3-Clause-style license as declared by upstream
 
 Used only as a build/CI tool to compile human-readable GLSL correctness kernels to pinned SPIR-V. It is not linked into the ORBI StreamMoE runtime.
+
+
+## mlc-ai/tokenizers-cpp
+
+tokenizers-cpp by MLC contributors  
+Repository: https://github.com/mlc-ai/tokenizers-cpp  
+Compatibility pin: `c586c52f93f7b060753bd2388eb96a105cb7374d`  
+License: Apache License 2.0
+
+Optional OSM-37B tokenizer backend for executing Hugging Face `tokenizer.json`
+assets on native Windows/Linux and, later, Android. The dependency wraps the
+Hugging Face Rust tokenizers engine and is disabled in the default numerical
+runtime build.
