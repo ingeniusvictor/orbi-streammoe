@@ -15,6 +15,7 @@ from build_qwen_production_commands import (
     build_phase_commands,
     write_immutable as write_command_plan,
 )
+from record_qwen_production_receipts import sync_production_audit
 from run_qwen_production_operator import (
     PHASES,
     initialize,
@@ -133,6 +134,7 @@ def execute_next(
     python_executable: str,
     command_plan_path: pathlib.Path | None = None,
     phase_executor: Callable = run_phase,
+    receipt_dir: pathlib.Path | None = None,
 ) -> dict:
     command_plan_path = command_plan_path or default_command_plan(state_path)
     plan, _ = build_launcher_context(
@@ -140,6 +142,12 @@ def execute_next(
         python_executable, command_plan_path,
     )
     current = initialize(manifest_path, state_path)
+    audit = sync_production_audit(
+        manifest_path,
+        state_path,
+        command_plan_path,
+        receipt_dir,
+    )
     phase = current["next_phase"]
     if phase is None:
         return {
@@ -150,11 +158,18 @@ def execute_next(
             "stop_reason": "already_complete",
             "phase": None,
             "command": None,
+            "audit": audit,
         }
 
     command = list(plan["phase_commands"][phase])
     result = phase_executor(
         manifest_path, state_path, phase, command, dry_run=False,
+    )
+    audit = sync_production_audit(
+        manifest_path,
+        state_path,
+        command_plan_path,
+        receipt_dir,
     )
     return {
         "action": "next",
@@ -165,6 +180,7 @@ def execute_next(
         "phase": phase,
         "command": command,
         "phase_report": result,
+        "audit": audit,
     }
 
 
@@ -177,6 +193,7 @@ def execute_all(
     command_plan_path: pathlib.Path | None = None,
     max_phases: int | None = None,
     phase_executor: Callable = run_phase,
+    receipt_dir: pathlib.Path | None = None,
 ) -> dict:
     if max_phases is not None and max_phases <= 0:
         raise RuntimeError("max_phases must be positive")
@@ -187,6 +204,12 @@ def execute_all(
         python_executable, command_plan_path,
     )
     current = initialize(manifest_path, state_path)
+    audit = sync_production_audit(
+        manifest_path,
+        state_path,
+        command_plan_path,
+        receipt_dir,
+    )
     phases_run = []
     last_report = current
     while last_report["next_phase"] is not None:
@@ -198,6 +221,12 @@ def execute_all(
             manifest_path, state_path, phase, command, dry_run=False,
         )
         phases_run.append({"phase": phase, "command": command})
+        audit = sync_production_audit(
+            manifest_path,
+            state_path,
+            command_plan_path,
+            receipt_dir,
+        )
 
     completed = bool(last_report["completed"])
     return {
@@ -214,7 +243,31 @@ def execute_all(
         ),
         "phases_run": phases_run,
         "phase_count": len(phases_run),
+        "audit": audit,
     }
+
+
+def audit_execution(
+    manifest_path: pathlib.Path,
+    state_path: pathlib.Path,
+    command_plan_path: pathlib.Path | None = None,
+    receipt_dir: pathlib.Path | None = None,
+) -> dict:
+    command_plan_path = command_plan_path or default_command_plan(state_path)
+    if not command_plan_path.exists():
+        raise RuntimeError(
+            f"production command plan does not exist: {command_plan_path}"
+        )
+    result = sync_production_audit(
+        manifest_path,
+        state_path,
+        command_plan_path,
+        receipt_dir,
+        verify_existing_completion=True,
+    )
+    result["action"] = "audit"
+    result["package_reverified"] = bool(result["completed"])
+    return result
 
 
 def main() -> int:
@@ -229,11 +282,13 @@ def main() -> int:
     )
     parser.add_argument("--python-executable", default=sys.executable)
     parser.add_argument("--command-plan")
+    parser.add_argument("--receipt-dir")
     sub = parser.add_subparsers(dest="action", required=True)
     sub.add_parser("preview")
     sub.add_parser("next")
     all_parser = sub.add_parser("all")
     all_parser.add_argument("--max-phases", type=int)
+    sub.add_parser("audit")
     args = parser.parse_args()
 
     manifest = pathlib.Path(args.manifest)
@@ -241,6 +296,7 @@ def main() -> int:
     bin_dir = pathlib.Path(args.bin_dir)
     scripts_dir = pathlib.Path(args.scripts_dir)
     command_plan = pathlib.Path(args.command_plan) if args.command_plan else None
+    receipt_dir = pathlib.Path(args.receipt_dir) if args.receipt_dir else None
 
     if args.preflight:
         prepare_manifest(manifest, pathlib.Path(args.preflight))
@@ -254,11 +310,21 @@ def main() -> int:
         result = execute_next(
             manifest, state, bin_dir, scripts_dir,
             args.python_executable, command_plan,
+            receipt_dir=receipt_dir,
+        )
+    elif args.action == "audit":
+        result = audit_execution(
+            manifest,
+            state,
+            command_plan,
+            receipt_dir,
         )
     else:
         result = execute_all(
             manifest, state, bin_dir, scripts_dir,
-            args.python_executable, command_plan, args.max_phases,
+            args.python_executable, command_plan,
+            args.max_phases,
+            receipt_dir=receipt_dir,
         )
 
     print(canonical_text(result), end="")
