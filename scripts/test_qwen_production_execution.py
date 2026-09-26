@@ -97,9 +97,9 @@ def main() -> int:
             raise RuntimeError("expert stride mismatch")
         if payload["expert_conversion"]["geometry"]["total_expert_payload_bytes"] != 5760:
             raise RuntimeError("expert total mismatch")
-        if payload["dense_conversion"]["estimated_payload_bytes"] != 96:
+        if payload["dense_conversion"]["estimated_payload_bytes"] != 112:
             raise RuntimeError("dense payload estimate mismatch")
-        expected_final = 5760 + 96 + HEADER_RESERVE_BYTES
+        expected_final = 5760 + 112 + HEADER_RESERVE_BYTES
         if payload["disk"]["final_output_reserve_bytes"] != expected_final:
             raise RuntimeError("final output reserve mismatch")
         if payload["disk"]["peak_required_free_bytes"] != (
