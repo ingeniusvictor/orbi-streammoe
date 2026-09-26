@@ -111,7 +111,40 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--metadata-dir", required=True)
     parser.add_argument("--output", required=True)
+    parser.add_argument("--layer", type=int)
+    parser.add_argument("--experts", help="comma-separated routed expert IDs")
     args = parser.parse_args()
+
+    if (args.layer is None) != (args.experts is None):
+        raise RuntimeError("--layer and --experts must be supplied together")
+
+    selected_tensors = list(SELECTED_TENSORS)
+    if args.experts is not None:
+        if args.layer < 0:
+            raise RuntimeError("--layer must be non-negative")
+        seen = set()
+        expert_ids = []
+        for item in args.experts.split(","):
+            item = item.strip()
+            if not item:
+                continue
+            expert = int(item)
+            if expert < 0 or expert in seen:
+                raise RuntimeError(
+                    "--experts must contain unique non-negative integers"
+                )
+            seen.add(expert)
+            expert_ids.append(expert)
+        if not expert_ids:
+            raise RuntimeError("--experts produced an empty expert set")
+        for expert in expert_ids:
+            for projection in ("gate_proj", "up_proj", "down_proj"):
+                name = (
+                    f"model.layers.{args.layer}.mlp.experts.{expert}."
+                    f"{projection}.weight"
+                )
+                if name not in selected_tensors:
+                    selected_tensors.append(name)
 
     metadata_dir = pathlib.Path(args.metadata_dir)
     index_path = metadata_dir / "model.safetensors.index.json"
@@ -119,7 +152,7 @@ def main() -> int:
     weight_map = index["weight_map"]
 
     shard_to_selected: dict[str, list[str]] = {}
-    for name in SELECTED_TENSORS:
+    for name in selected_tensors:
         shard = weight_map.get(name)
         if not isinstance(shard, str):
             raise RuntimeError(f"selected tensor missing from weight_map: {name}")
@@ -174,7 +207,7 @@ def main() -> int:
         "schema_version": 1,
         "model": MODEL,
         "snapshot": SNAPSHOT,
-        "selected_tensors": list(SELECTED_TENSORS),
+        "selected_tensors": selected_tensors,
         "shards": shard_results,
         "total_fetched_bytes": total_fetched,
     }
