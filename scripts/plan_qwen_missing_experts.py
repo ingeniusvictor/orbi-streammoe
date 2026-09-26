@@ -57,6 +57,8 @@ def main() -> int:
         if int(journal.get("expert_count", -1)) != args.expert_count:
             raise RuntimeError("journal expert_count disagrees with request")
         completed = {int(item["expert"]) for item in journal["completed"]}
+        if any(expert >= args.expert_count for expert in completed):
+            raise RuntimeError("journal contains expert id outside expert_count")
 
     requested = list(range(args.first_expert, args.end_expert))
     missing = [expert for expert in requested if expert not in completed]
