@@ -5,8 +5,10 @@
 #include <cmath>
 #include <fstream>
 #include <limits>
+#include <span>
 #include <stdexcept>
 #include <string>
+#include <utility>
 
 #include <nlohmann/json.hpp>
 
@@ -278,6 +280,7 @@ AffineQ4Projection quantize_affine_q4_rows(
     std::size_t group_size) {
   if (rows == 0U || cols == 0U || group_size == 0U ||
       (cols % 8U) != 0U || (cols % group_size) != 0U ||
+      rows > std::numeric_limits<std::size_t>::max() / cols ||
       values.size() != rows * cols) {
     throw std::invalid_argument(
         "single expert pilot: invalid Q4 matrix geometry");
