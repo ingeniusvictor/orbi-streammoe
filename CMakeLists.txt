@@ -84,6 +84,7 @@ add_library(orbi_streammoe_core
   src/model/sharded_checkpoint_contract.cpp
   src/model/shard_header_contract.cpp
   src/conversion/bf16_slice.cpp
+  src/conversion/qpack_plan.cpp
   src/session/greedy_token_session.cpp
   src/session/text_tokenizer_boundary.cpp
   src/session/greedy_text_session.cpp
@@ -300,6 +301,18 @@ if(ORBI_STREAMMOE_BUILD_TESTS)
   target_link_libraries(orbi_streammoe_official_conversion_slice_tests PRIVATE orbi_streammoe_core)
   target_compile_features(orbi_streammoe_official_conversion_slice_tests PRIVATE cxx_std_20)
 
+  add_executable(orbi_streammoe_qpack_conversion_plan_tests
+    tests/qpack_conversion_plan_test.cpp
+  )
+  target_link_libraries(orbi_streammoe_qpack_conversion_plan_tests PRIVATE orbi_streammoe_core)
+  target_compile_features(orbi_streammoe_qpack_conversion_plan_tests PRIVATE cxx_std_20)
+
+  add_executable(orbi_streammoe_official_qpack_conversion_plan_tests
+    tests/official_qpack_conversion_plan_test.cpp
+  )
+  target_link_libraries(orbi_streammoe_official_qpack_conversion_plan_tests PRIVATE orbi_streammoe_core)
+  target_compile_features(orbi_streammoe_official_qpack_conversion_plan_tests PRIVATE cxx_std_20)
+
   add_executable(orbi_streammoe_greedy_token_session_tests
     tests/greedy_token_session_test.cpp
   )
@@ -503,6 +516,7 @@ if(ORBI_STREAMMOE_BUILD_TESTS)
   add_test(NAME orbi_streammoe_sharded_checkpoint_contract_tests COMMAND orbi_streammoe_sharded_checkpoint_contract_tests)
   add_test(NAME orbi_streammoe_shard_header_contract_tests COMMAND orbi_streammoe_shard_header_contract_tests)
   add_test(NAME orbi_streammoe_bf16_conversion_slice_tests COMMAND orbi_streammoe_bf16_conversion_slice_tests)
+  add_test(NAME orbi_streammoe_qpack_conversion_plan_tests COMMAND orbi_streammoe_qpack_conversion_plan_tests)
   add_test(NAME orbi_streammoe_greedy_token_session_tests COMMAND orbi_streammoe_greedy_token_session_tests)
   add_test(NAME orbi_streammoe_text_tokenizer_boundary_tests COMMAND orbi_streammoe_text_tokenizer_boundary_tests)
   add_test(NAME orbi_streammoe_greedy_text_session_tests COMMAND orbi_streammoe_greedy_text_session_tests)
