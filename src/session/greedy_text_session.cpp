@@ -122,10 +122,10 @@ QwenGreedyTextSession::generate(
   try {
     const auto tokenizer_vocab = tokenizer.vocab_size();
     if (tokenizer_vocab.has_value() &&
-        *tokenizer_vocab != vocab_size()) {
+        *tokenizer_vocab > vocab_size()) {
       result.status = QwenGreedyTextSessionStatus::invalid_request;
       result.diagnostic =
-          "tokenizer vocabulary size does not match model vocabulary";
+          "tokenizer token-ID domain exceeds model vocabulary";
       return result;
     }
 

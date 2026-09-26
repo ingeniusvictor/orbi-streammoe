@@ -31,6 +31,9 @@ class Tokenizer {
  public:
   virtual ~Tokenizer() = default;
 
+  /// Upper bound of token IDs this tokenizer can represent (max ID + 1),
+  /// including added/special tokens when known. This may be smaller than a
+  /// model's padded LM-head vocabulary.
   [[nodiscard]] virtual std::optional<std::size_t> vocab_size() const noexcept {
     return std::nullopt;
   }

@@ -801,7 +801,7 @@ int main() {
         reset_again.generated_tokens == result.generated_tokens,
         "reset text session must reproduce deterministic greedy output");
 
-    tokenizer.vocab = 15U;
+    tokenizer.vocab = 17U;
     const auto vocab_mismatch = text_session->generate(
         checkpoint,
         *context,
@@ -817,7 +817,7 @@ int main() {
     require(
         !vocab_mismatch.token_session_executed &&
         vocab_mismatch.model_steps == 0U,
-        "vocab mismatch must fail before model execution");
+        "oversized tokenizer domain must fail before model execution");
     tokenizer.vocab = 16U;
 
     tokenizer.fail_encode = true;
