@@ -146,6 +146,12 @@ else()
   target_compile_options(orbi_streammoe_core PRIVATE -Wall -Wextra -Wpedantic)
 endif()
 
+add_executable(orbi_streammoe_qpack_convert_range
+  tools/qpack_convert_range.cpp
+)
+target_link_libraries(orbi_streammoe_qpack_convert_range PRIVATE orbi_streammoe_core)
+target_compile_features(orbi_streammoe_qpack_convert_range PRIVATE cxx_std_20)
+
 if(ORBI_STREAMMOE_BUILD_TESTS)
   enable_testing()
 
