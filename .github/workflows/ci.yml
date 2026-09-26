@@ -51,6 +51,12 @@ jobs:
       - name: Verify OSM-41B tooling syntax
         run: python -m py_compile scripts/run_qwen_production_operator.py scripts/test_qwen_production_operator.py
 
+      - name: Verify OSM-41C production expert controller
+        run: python scripts/test_qwen_expert_controller.py
+
+      - name: Verify OSM-41C tooling syntax
+        run: python -m py_compile scripts/run_qwen_expert_conversion.py scripts/test_qwen_expert_controller.py
+
       - name: Install Linux Vulkan software driver
         if: runner.os == 'Linux'
         run: |
