@@ -7,6 +7,7 @@ project(orbi_streammoe
 )
 
 option(ORBI_STREAMMOE_BUILD_TESTS "Build ORBI StreamMoE tests" ON)
+option(ORBI_STREAMMOE_ENABLE_TOKENIZERS_CPP "Enable pinned mlc-ai/tokenizers-cpp backend" OFF)
 
 include(FetchContent)
 
@@ -17,6 +18,19 @@ FetchContent_Declare(
   GIT_SHALLOW TRUE
 )
 FetchContent_MakeAvailable(nlohmann_json)
+
+if(ORBI_STREAMMOE_ENABLE_TOKENIZERS_CPP)
+  set(MLC_ENABLE_SENTENCEPIECE_TOKENIZER OFF CACHE BOOL "" FORCE)
+  FetchContent_Declare(
+    orbi_tokenizers_cpp
+    GIT_REPOSITORY https://github.com/mlc-ai/tokenizers-cpp.git
+    GIT_TAG c586c52f93f7b060753bd2388eb96a105cb7374d
+    GIT_SHALLOW FALSE
+    GIT_SUBMODULES msgpack sentencepiece
+    GIT_SUBMODULES_RECURSE TRUE
+  )
+  FetchContent_MakeAvailable(orbi_tokenizers_cpp)
+endif()
 
 set(VULKAN_HEADERS_ENABLE_TESTS OFF CACHE BOOL "" FORCE)
 set(VULKAN_HEADERS_ENABLE_INSTALL OFF CACHE BOOL "" FORCE)
@@ -71,6 +85,7 @@ add_library(orbi_streammoe_core
   src/session/text_tokenizer_boundary.cpp
   src/session/greedy_text_session.cpp
   src/tokenizer/qwen_tokenizer_assets.cpp
+  src/tokenizer/tokenizers_cpp_qwen_tokenizer.cpp
   src/model/shared_expert.cpp
   src/cache/expert_cache.cpp
   src/storage/qpack_expert_storage.cpp
@@ -111,6 +126,11 @@ target_include_directories(orbi_streammoe_core
 
 target_compile_features(orbi_streammoe_core PUBLIC cxx_std_20)
 target_link_libraries(orbi_streammoe_core PRIVATE nlohmann_json::nlohmann_json volk::volk)
+
+if(ORBI_STREAMMOE_ENABLE_TOKENIZERS_CPP)
+  target_compile_definitions(orbi_streammoe_core PRIVATE ORBI_STREAMMOE_HAS_TOKENIZERS_CPP=1)
+  target_link_libraries(orbi_streammoe_core PRIVATE tokenizers_cpp tokenizers_c)
+endif()
 
 if(MSVC)
   target_compile_options(orbi_streammoe_core PRIVATE /W4 /permissive-)
@@ -264,6 +284,12 @@ if(ORBI_STREAMMOE_BUILD_TESTS)
   )
   target_link_libraries(orbi_streammoe_qwen_tokenizer_assets_tests PRIVATE orbi_streammoe_core)
   target_compile_features(orbi_streammoe_qwen_tokenizer_assets_tests PRIVATE cxx_std_20)
+
+  add_executable(orbi_streammoe_tokenizers_cpp_qwen_tokenizer_tests
+    tests/tokenizers_cpp_qwen_tokenizer_test.cpp
+  )
+  target_link_libraries(orbi_streammoe_tokenizers_cpp_qwen_tokenizer_tests PRIVATE orbi_streammoe_core)
+  target_compile_features(orbi_streammoe_tokenizers_cpp_qwen_tokenizer_tests PRIVATE cxx_std_20)
 
   add_executable(orbi_streammoe_cpu_reference_tests
     tests/cpu_reference_test.cpp
@@ -433,6 +459,7 @@ if(ORBI_STREAMMOE_BUILD_TESTS)
   add_test(NAME orbi_streammoe_text_tokenizer_boundary_tests COMMAND orbi_streammoe_text_tokenizer_boundary_tests)
   add_test(NAME orbi_streammoe_greedy_text_session_tests COMMAND orbi_streammoe_greedy_text_session_tests)
   add_test(NAME orbi_streammoe_qwen_tokenizer_assets_tests COMMAND orbi_streammoe_qwen_tokenizer_assets_tests)
+  add_test(NAME orbi_streammoe_tokenizers_cpp_qwen_tokenizer_tests COMMAND orbi_streammoe_tokenizers_cpp_qwen_tokenizer_tests)
   add_test(NAME orbi_streammoe_cpu_reference_tests COMMAND orbi_streammoe_cpu_reference_tests)
   add_test(NAME orbi_streammoe_expert_cache_tests COMMAND orbi_streammoe_expert_cache_tests)
   add_test(NAME orbi_streammoe_qwen_router_tests COMMAND orbi_streammoe_qwen_router_tests)
