@@ -218,6 +218,10 @@ def verify_real_execution(root: pathlib.Path) -> None:
         raise RuntimeError("real retry/backup recovery mismatch")
 
     # Simulate interruption immediately after the durable running transition.
+    # A real interrupted attempt has no completed phase receipt yet, so remove
+    # the prior fixture receipt before regressing this synthetic state.
+    receipt = pathlib.Path(str(state) + ".receipts") / "00-expert_conversion.json"
+    receipt.unlink()
     durable["phases"]["expert_conversion"]["status"] = "running"
     write_state(state, durable)
     execute_next(*args)
