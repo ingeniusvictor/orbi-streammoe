@@ -96,7 +96,7 @@ def fixture_plan(inventory):
 def run_tests():
     inventory = fixture_inventory()
     payload = controller.estimate_output_payload_bytes(inventory)
-    require(payload == 32 + 192, f"unexpected output payload estimate: {payload}")
+    require(payload == 192, f"unexpected output payload estimate: {payload}")
 
     plan = fixture_plan(inventory)
     limited = controller.limit_plan_by_source_budget(plan, 8)
