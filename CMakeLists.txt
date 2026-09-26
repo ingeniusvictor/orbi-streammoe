@@ -68,6 +68,7 @@ add_library(orbi_streammoe_core
   src/model/qwen_global_streaming.cpp
   src/model/checkpoint_model_shell.cpp
   src/session/greedy_token_session.cpp
+  src/session/text_tokenizer_boundary.cpp
   src/model/shared_expert.cpp
   src/cache/expert_cache.cpp
   src/storage/qpack_expert_storage.cpp
@@ -244,6 +245,12 @@ if(ORBI_STREAMMOE_BUILD_TESTS)
   target_link_libraries(orbi_streammoe_greedy_token_session_tests PRIVATE orbi_streammoe_core)
   target_compile_features(orbi_streammoe_greedy_token_session_tests PRIVATE cxx_std_20)
 
+  add_executable(orbi_streammoe_text_tokenizer_boundary_tests
+    tests/text_tokenizer_boundary_test.cpp
+  )
+  target_link_libraries(orbi_streammoe_text_tokenizer_boundary_tests PRIVATE orbi_streammoe_core)
+  target_compile_features(orbi_streammoe_text_tokenizer_boundary_tests PRIVATE cxx_std_20)
+
   add_executable(orbi_streammoe_cpu_reference_tests
     tests/cpu_reference_test.cpp
   )
@@ -409,6 +416,7 @@ if(ORBI_STREAMMOE_BUILD_TESTS)
   add_test(NAME orbi_streammoe_qwen_global_streaming_tests COMMAND orbi_streammoe_qwen_global_streaming_tests)
   add_test(NAME orbi_streammoe_checkpoint_model_shell_tests COMMAND orbi_streammoe_checkpoint_model_shell_tests)
   add_test(NAME orbi_streammoe_greedy_token_session_tests COMMAND orbi_streammoe_greedy_token_session_tests)
+  add_test(NAME orbi_streammoe_text_tokenizer_boundary_tests COMMAND orbi_streammoe_text_tokenizer_boundary_tests)
   add_test(NAME orbi_streammoe_cpu_reference_tests COMMAND orbi_streammoe_cpu_reference_tests)
   add_test(NAME orbi_streammoe_expert_cache_tests COMMAND orbi_streammoe_expert_cache_tests)
   add_test(NAME orbi_streammoe_qwen_router_tests COMMAND orbi_streammoe_qwen_router_tests)
