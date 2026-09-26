@@ -48,10 +48,10 @@ int main(int argc, char** argv) {
         manifest.snapshot == "f5e99a3698d364cf77584543481b778afee26177",
         "official range pilot snapshot mismatch");
     require(
-        manifest.selected_tensors.size() == 8U,
+        manifest.selected_tensors.size() == 10U,
         "official selected tensor count mismatch");
     require(
-        !manifest.shards.empty() && manifest.shards.size() <= 8U,
+        !manifest.shards.empty() && manifest.shards.size() <= 10U,
         "official range pilot shard count unexpected");
     require(
         manifest.total_fetched_bytes < 64ULL * 1024ULL * 1024ULL,
