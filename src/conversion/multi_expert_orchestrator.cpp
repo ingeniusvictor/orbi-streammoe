@@ -4,6 +4,7 @@
 #include <cmath>
 #include <limits>
 #include <map>
+#include <optional>
 #include <stdexcept>
 #include <string>
 
