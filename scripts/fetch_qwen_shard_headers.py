@@ -13,9 +13,9 @@ SELECTED_TENSORS = (
     "model.embed_tokens.weight",
     "model.layers.0.input_layernorm.weight",
     "model.layers.0.linear_attn.in_proj_qkvz.weight",
-    "model.layers.0.mlp.experts.gate_up_proj",
+    "model.layers.0.mlp.experts.0.gate_proj.weight",
     "model.layers.3.self_attn.q_proj.weight",
-    "model.layers.3.mlp.experts.down_proj",
+    "model.layers.3.mlp.experts.0.down_proj.weight",
     "model.norm.weight",
     "lm_head.weight",
 )
