@@ -282,6 +282,24 @@ def verify_complete_receipt_chain(root: pathlib.Path) -> None:
     first_receipt.write_bytes(original_receipt)
     audit_execution(manifest, state)
 
+    original_completion = completion_path.read_bytes()
+    corrupted_completion = json.loads(original_completion)
+    corrupted_completion["package"]["package_digest_sha256"] = "0" * 64
+    write_json(completion_path, corrupted_completion)
+    expect_failure(
+        lambda: execute_next(
+            manifest,
+            state,
+            bin_dir,
+            scripts_dir,
+            "python-fixture",
+            phase_executor=fake_phase_executor,
+        ),
+        "completion receipt digest corruption",
+    )
+    completion_path.write_bytes(original_completion)
+    audit_execution(manifest, state)
+
     if not plan.exists():
         raise RuntimeError("immutable command plan is missing")
 
