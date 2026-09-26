@@ -12,6 +12,7 @@ enum class QpackConversionClass {
   global_dense,
   layer_dense,
   routed_expert,
+  auxiliary_mtp,
 };
 
 enum class QpackConversionAction {
@@ -20,6 +21,7 @@ enum class QpackConversionAction {
   split_packed_gate_up_experts,
   split_packed_down_experts,
   direct_expert_quantize,
+  exclude_auxiliary_mtp,
 };
 
 struct QpackConversionPlanEntry {
