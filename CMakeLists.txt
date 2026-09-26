@@ -82,6 +82,7 @@ add_library(orbi_streammoe_core
   src/model/qwen_global_streaming.cpp
   src/model/checkpoint_model_shell.cpp
   src/model/sharded_checkpoint_contract.cpp
+  src/model/shard_header_contract.cpp
   src/session/greedy_token_session.cpp
   src/session/text_tokenizer_boundary.cpp
   src/session/greedy_text_session.cpp
@@ -273,6 +274,18 @@ if(ORBI_STREAMMOE_BUILD_TESTS)
   )
   target_link_libraries(orbi_streammoe_official_checkpoint_metadata_tests PRIVATE orbi_streammoe_core)
   target_compile_features(orbi_streammoe_official_checkpoint_metadata_tests PRIVATE cxx_std_20)
+
+  add_executable(orbi_streammoe_shard_header_contract_tests
+    tests/shard_header_contract_test.cpp
+  )
+  target_link_libraries(orbi_streammoe_shard_header_contract_tests PRIVATE orbi_streammoe_core)
+  target_compile_features(orbi_streammoe_shard_header_contract_tests PRIVATE cxx_std_20)
+
+  add_executable(orbi_streammoe_official_shard_range_tests
+    tests/official_shard_range_test.cpp
+  )
+  target_link_libraries(orbi_streammoe_official_shard_range_tests PRIVATE orbi_streammoe_core)
+  target_compile_features(orbi_streammoe_official_shard_range_tests PRIVATE cxx_std_20)
 
   add_executable(orbi_streammoe_greedy_token_session_tests
     tests/greedy_token_session_test.cpp
@@ -475,6 +488,7 @@ if(ORBI_STREAMMOE_BUILD_TESTS)
   add_test(NAME orbi_streammoe_qwen_global_streaming_tests COMMAND orbi_streammoe_qwen_global_streaming_tests)
   add_test(NAME orbi_streammoe_checkpoint_model_shell_tests COMMAND orbi_streammoe_checkpoint_model_shell_tests)
   add_test(NAME orbi_streammoe_sharded_checkpoint_contract_tests COMMAND orbi_streammoe_sharded_checkpoint_contract_tests)
+  add_test(NAME orbi_streammoe_shard_header_contract_tests COMMAND orbi_streammoe_shard_header_contract_tests)
   add_test(NAME orbi_streammoe_greedy_token_session_tests COMMAND orbi_streammoe_greedy_token_session_tests)
   add_test(NAME orbi_streammoe_text_tokenizer_boundary_tests COMMAND orbi_streammoe_text_tokenizer_boundary_tests)
   add_test(NAME orbi_streammoe_greedy_text_session_tests COMMAND orbi_streammoe_greedy_text_session_tests)
