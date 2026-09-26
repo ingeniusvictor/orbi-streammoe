@@ -49,7 +49,7 @@ jobs:
         run: cmake -S . -B build/cmake -DORBI_STREAMMOE_BUILD_TESTS=ON
 
       - name: Build official checkpoint probes
-        run: cmake --build build/cmake --config Release --target orbi_streammoe_official_checkpoint_metadata_tests orbi_streammoe_official_shard_range_tests orbi_streammoe_official_conversion_slice_tests orbi_streammoe_official_qpack_conversion_plan_tests orbi_streammoe_official_qpack_expert_geometry_tests orbi_streammoe_official_single_expert_conversion_tests orbi_streammoe_official_multi_expert_conversion_tests orbi_streammoe_official_qpack_package_plan_tests orbi_streammoe_official_dense_conversion_tests orbi_streammoe_official_streamed_global_rows_tests
+        run: cmake --build build/cmake --config Release --target orbi_streammoe_official_checkpoint_metadata_tests orbi_streammoe_official_shard_range_tests orbi_streammoe_official_conversion_slice_tests orbi_streammoe_official_qpack_conversion_plan_tests orbi_streammoe_official_qpack_expert_geometry_tests orbi_streammoe_official_single_expert_conversion_tests orbi_streammoe_official_multi_expert_conversion_tests orbi_streammoe_official_qpack_package_plan_tests orbi_streammoe_official_dense_conversion_tests orbi_streammoe_official_streamed_global_rows_tests orbi_streammoe_qpack_list_dense_sources
 
       - name: Verify official Qwen checkpoint metadata
         run: build/cmake/Release/orbi_streammoe_official_checkpoint_metadata_tests.exe build/qwen-official-metadata
@@ -130,3 +130,14 @@ jobs:
       - name: Verify official streamed global matrix rows
         run: build/cmake/orbi_streammoe_official_streamed_global_rows_tests build/qwen-official-metadata build/qwen-official-global-rows
         if: runner.os == 'Linux'
+
+      - name: Emit official OSM-40D dense source inventory
+        run: build/cmake/Release/orbi_streammoe_qpack_list_dense_sources.exe build/qwen-official-metadata build/qwen-official-dense-sources.json
+        if: runner.os == 'Windows'
+
+      - name: Emit official OSM-40D dense source inventory
+        run: build/cmake/orbi_streammoe_qpack_list_dense_sources build/qwen-official-metadata build/qwen-official-dense-sources.json
+        if: runner.os == 'Linux'
+
+      - name: Verify official OSM-40D dense source inventory
+        run: python scripts/test_qwen_dense_source_inventory.py build/qwen-official-dense-sources.json
