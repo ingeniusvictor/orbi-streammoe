@@ -1,0 +1,36 @@
+name: checkpoint-metadata
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  official-qwen-metadata:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest]
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download pinned official checkpoint metadata
+        run: python scripts/fetch_qwen_checkpoint_metadata.py --output build/qwen-official-metadata
+
+      - name: Configure
+        run: cmake -S . -B build/cmake -DORBI_STREAMMOE_BUILD_TESTS=ON
+
+      - name: Build official metadata probe
+        run: cmake --build build/cmake --config Release --target orbi_streammoe_official_checkpoint_metadata_tests
+
+      - name: Verify official Qwen checkpoint metadata
+        run: build/cmake/Release/orbi_streammoe_official_checkpoint_metadata_tests.exe build/qwen-official-metadata
+        if: runner.os == 'Windows'
+
+      - name: Verify official Qwen checkpoint metadata
+        run: build/cmake/orbi_streammoe_official_checkpoint_metadata_tests build/qwen-official-metadata
+        if: runner.os == 'Linux'
