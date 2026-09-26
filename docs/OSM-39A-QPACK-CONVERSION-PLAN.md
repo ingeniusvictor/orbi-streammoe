@@ -31,7 +31,9 @@ Each entry records:
 
 - `global_dense`: embedding, final norm and LM head;
 - `layer_dense`: norms, routers, shared expert tensors, DeltaNet/GQA tensors;
-- `routed_expert`: MoE expert payloads.
+- `routed_expert`: MoE expert payloads;
+- `auxiliary_mtp`: official Multi-Token Prediction tensors not consumed by the
+  current autoregressive runtime.
 
 ## Conversion actions
 
@@ -39,13 +41,19 @@ Each entry records:
 - `affine_quantize` for dense matrix modules;
 - `split_packed_gate_up_experts` for official packed gate/up expert tensors;
 - `split_packed_down_experts` for official packed down expert tensors;
-- `direct_expert_quantize` for legacy/per-expert source layouts.
+- `direct_expert_quantize` for legacy/per-expert source layouts;
+- `exclude_auxiliary_mtp` for the explicit MTP auxiliary inventory.
 
 ## Official Qwen3-Next checkpoint
 
 The pinned official checkpoint currently uses one packed
 `mlp.experts.gate_up_proj` tensor and one packed `mlp.experts.down_proj`
 tensor per decoder layer.
+
+The official checkpoint also carries `mtp.*` Multi-Token Prediction tensors.
+Those are preserved in the 1:1 source inventory but explicitly marked excluded
+because the current ORBI runtime certifies standard autoregressive generation,
+not Qwen MTP speculative execution.
 
 OSM-39A therefore requires:
 
