@@ -19,6 +19,7 @@ SELECTED_TENSORS = (
     "model.layers.0.mlp.experts.1.gate_proj.weight",
     "model.layers.0.mlp.experts.1.up_proj.weight",
     "model.layers.0.mlp.experts.1.down_proj.weight",
+    "model.layers.0.mlp.shared_expert_gate.weight",
     "model.layers.3.self_attn.q_proj.weight",
     "model.layers.3.mlp.experts.0.down_proj.weight",
     "model.norm.weight",
