@@ -30,11 +30,14 @@ jobs:
       - name: Fetch bounded official single expert
         run: python scripts/fetch_qwen_single_expert.py --range-manifest build/qwen-official-range-manifest.json --output-dir build/qwen-official-single-expert
 
+      - name: Fetch bounded official two-expert range
+        run: python scripts/fetch_qwen_expert_range.py --range-manifest build/qwen-official-range-manifest.json --output-dir build/qwen-official-expert-range --layer 0 --first-expert 0 --count 2
+
       - name: Configure
         run: cmake -S . -B build/cmake -DORBI_STREAMMOE_BUILD_TESTS=ON
 
       - name: Build official checkpoint probes
-        run: cmake --build build/cmake --config Release --target orbi_streammoe_official_checkpoint_metadata_tests orbi_streammoe_official_shard_range_tests orbi_streammoe_official_conversion_slice_tests orbi_streammoe_official_qpack_conversion_plan_tests orbi_streammoe_official_qpack_expert_geometry_tests orbi_streammoe_official_single_expert_conversion_tests
+        run: cmake --build build/cmake --config Release --target orbi_streammoe_official_checkpoint_metadata_tests orbi_streammoe_official_shard_range_tests orbi_streammoe_official_conversion_slice_tests orbi_streammoe_official_qpack_conversion_plan_tests orbi_streammoe_official_qpack_expert_geometry_tests orbi_streammoe_official_single_expert_conversion_tests orbi_streammoe_official_multi_expert_conversion_tests
 
       - name: Verify official Qwen checkpoint metadata
         run: build/cmake/Release/orbi_streammoe_official_checkpoint_metadata_tests.exe build/qwen-official-metadata
@@ -82,4 +85,12 @@ jobs:
 
       - name: Verify official bounded single-expert conversion
         run: build/cmake/orbi_streammoe_official_single_expert_conversion_tests build/qwen-official-metadata build/qwen-official-single-expert
+        if: runner.os == 'Linux'
+
+      - name: Verify official bounded multi-expert conversion
+        run: build/cmake/Release/orbi_streammoe_official_multi_expert_conversion_tests.exe build/qwen-official-metadata build/qwen-official-expert-range
+        if: runner.os == 'Windows'
+
+      - name: Verify official bounded multi-expert conversion
+        run: build/cmake/orbi_streammoe_official_multi_expert_conversion_tests build/qwen-official-metadata build/qwen-official-expert-range
         if: runner.os == 'Linux'
