@@ -88,6 +88,7 @@ add_library(orbi_streammoe_core
   src/conversion/qpack_geometry.cpp
   src/conversion/single_expert_pilot.cpp
   src/conversion/qpack_layer_writer.cpp
+  src/conversion/multi_expert_orchestrator.cpp
   src/session/greedy_token_session.cpp
   src/session/text_tokenizer_boundary.cpp
   src/session/greedy_text_session.cpp
@@ -346,6 +347,18 @@ if(ORBI_STREAMMOE_BUILD_TESTS)
   target_link_libraries(orbi_streammoe_qpack_layer_writer_tests PRIVATE orbi_streammoe_core)
   target_compile_features(orbi_streammoe_qpack_layer_writer_tests PRIVATE cxx_std_20)
 
+  add_executable(orbi_streammoe_multi_expert_orchestrator_tests
+    tests/multi_expert_orchestrator_test.cpp
+  )
+  target_link_libraries(orbi_streammoe_multi_expert_orchestrator_tests PRIVATE orbi_streammoe_core nlohmann_json::nlohmann_json)
+  target_compile_features(orbi_streammoe_multi_expert_orchestrator_tests PRIVATE cxx_std_20)
+
+  add_executable(orbi_streammoe_official_multi_expert_conversion_tests
+    tests/official_multi_expert_conversion_test.cpp
+  )
+  target_link_libraries(orbi_streammoe_official_multi_expert_conversion_tests PRIVATE orbi_streammoe_core)
+  target_compile_features(orbi_streammoe_official_multi_expert_conversion_tests PRIVATE cxx_std_20)
+
   add_executable(orbi_streammoe_greedy_token_session_tests
     tests/greedy_token_session_test.cpp
   )
@@ -553,6 +566,7 @@ if(ORBI_STREAMMOE_BUILD_TESTS)
   add_test(NAME orbi_streammoe_qpack_expert_geometry_tests COMMAND orbi_streammoe_qpack_expert_geometry_tests)
   add_test(NAME orbi_streammoe_affine_q4_quantizer_tests COMMAND orbi_streammoe_affine_q4_quantizer_tests)
   add_test(NAME orbi_streammoe_qpack_layer_writer_tests COMMAND orbi_streammoe_qpack_layer_writer_tests)
+  add_test(NAME orbi_streammoe_multi_expert_orchestrator_tests COMMAND orbi_streammoe_multi_expert_orchestrator_tests)
   add_test(NAME orbi_streammoe_greedy_token_session_tests COMMAND orbi_streammoe_greedy_token_session_tests)
   add_test(NAME orbi_streammoe_text_tokenizer_boundary_tests COMMAND orbi_streammoe_text_tokenizer_boundary_tests)
   add_test(NAME orbi_streammoe_greedy_text_session_tests COMMAND orbi_streammoe_greedy_text_session_tests)

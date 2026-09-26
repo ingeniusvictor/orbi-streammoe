@@ -48,7 +48,7 @@ int main(int argc, char** argv) {
         manifest.snapshot == "f5e99a3698d364cf77584543481b778afee26177",
         "official range pilot snapshot mismatch");
     require(
-        manifest.selected_tensors.size() == 10U,
+        manifest.selected_tensors.size() == 13U,
         "official selected tensor count mismatch");
     require(
         !manifest.shards.empty() && manifest.shards.size() <= 10U,
@@ -80,6 +80,18 @@ int main(int argc, char** argv) {
         manifest.tensor("model.layers.0.input_layernorm.weight"),
         {2048U},
         "layer-0 input norm");
+    require_shape(
+        manifest.tensor("model.layers.0.mlp.experts.1.gate_proj.weight"),
+        {512U, 2048U},
+        "layer-0 expert-1 gate");
+    require_shape(
+        manifest.tensor("model.layers.0.mlp.experts.1.up_proj.weight"),
+        {512U, 2048U},
+        "layer-0 expert-1 up");
+    require_shape(
+        manifest.tensor("model.layers.0.mlp.experts.1.down_proj.weight"),
+        {2048U, 512U},
+        "layer-0 expert-1 down");
 
     std::cout
         << "OSM-38C official safetensors shard range pilot: PASS\n"
