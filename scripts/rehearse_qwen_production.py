@@ -44,15 +44,26 @@ def write_immutable(path: pathlib.Path, payload: dict) -> None:
     path.write_text(rendered, encoding="utf-8")
 
 
-def collect_bounded_tree(root: pathlib.Path, max_total_bytes: int) -> dict:
+def collect_declared_files(
+    root: pathlib.Path,
+    relative_paths: list[str],
+    max_total_bytes: int,
+) -> dict:
     if max_total_bytes <= 0:
         raise RuntimeError("max evidence bytes must be positive")
     if not root.is_dir():
         raise RuntimeError(f"bounded source evidence directory is missing: {root}")
 
+    normalized = sorted(set(relative_paths))
+    if not normalized:
+        raise RuntimeError(f"bounded source evidence is empty: {root}")
+
     files = []
     total = 0
-    for path in sorted(item for item in root.rglob("*") if item.is_file()):
+    for relative in normalized:
+        path = root / pathlib.Path(relative)
+        if not path.is_file():
+            raise RuntimeError(f"declared source evidence is missing: {path}")
         size = path.stat().st_size
         total += size
         if total > max_total_bytes:
@@ -61,13 +72,12 @@ def collect_bounded_tree(root: pathlib.Path, max_total_bytes: int) -> dict:
             )
         files.append(
             {
-                "path": path.relative_to(root).as_posix(),
+                "path": pathlib.Path(relative).as_posix(),
                 "bytes": size,
                 "sha256": sha256_file(path),
             }
         )
-    if not files:
-        raise RuntimeError(f"bounded source evidence is empty: {root}")
+
     aggregate = hashlib.sha256(
         json.dumps(files, sort_keys=True, separators=(",", ":")).encode("utf-8")
     ).hexdigest()
@@ -78,6 +88,69 @@ def collect_bounded_tree(root: pathlib.Path, max_total_bytes: int) -> dict:
         "aggregate_sha256": aggregate,
         "files": files,
     }
+
+
+def collect_bounded_tree(root: pathlib.Path, max_total_bytes: int) -> dict:
+    relative_paths = [
+        path.relative_to(root).as_posix()
+        for path in root.rglob("*")
+        if path.is_file()
+    ]
+    return collect_declared_files(root, relative_paths, max_total_bytes)
+
+
+def collect_expert_source_evidence(
+    root: pathlib.Path,
+    max_total_bytes: int,
+) -> dict:
+    summary = load_json(root / "expert-range.json")
+    experts = summary.get("experts")
+    if not isinstance(experts, list) or not experts:
+        raise RuntimeError("expert-range manifest is missing experts")
+
+    relative_paths = ["expert-range.json"]
+    for expert in experts:
+        expert_dir = f"expert_{int(expert):03d}"
+        manifest_relative = f"{expert_dir}/single-expert.json"
+        manifest = load_json(root / manifest_relative)
+        relative_paths.append(manifest_relative)
+        projections = manifest.get("projections")
+        if not isinstance(projections, dict) or not projections:
+            raise RuntimeError("single-expert manifest is missing projections")
+        for projection in projections.values():
+            source_file = projection.get("source_file")
+            if not isinstance(source_file, str) or not source_file:
+                raise RuntimeError("single-expert manifest has invalid source_file")
+            relative_paths.append(f"{expert_dir}/{source_file}")
+
+    evidence = collect_declared_files(root, relative_paths, max_total_bytes)
+    if evidence["total_bytes"] < int(summary.get("total_fetched_bytes", 0)):
+        raise RuntimeError("expert evidence is smaller than declared fetched bytes")
+    return evidence
+
+
+def collect_dense_source_evidence(
+    root: pathlib.Path,
+    max_total_bytes: int,
+) -> dict:
+    manifest = load_json(root / "dense-pilot.json")
+    tensors = manifest.get("tensors")
+    if not isinstance(tensors, list) or not tensors:
+        raise RuntimeError("dense-pilot manifest is missing tensors")
+
+    relative_paths = ["dense-pilot.json"]
+    declared_source_bytes = 0
+    for tensor in tensors:
+        source_file = tensor.get("source_file")
+        if not isinstance(source_file, str) or not source_file:
+            raise RuntimeError("dense-pilot manifest has invalid source_file")
+        declared_source_bytes += int(tensor.get("source_byte_size", 0))
+        relative_paths.append(source_file)
+
+    evidence = collect_declared_files(root, relative_paths, max_total_bytes)
+    if evidence["total_bytes"] < declared_source_bytes:
+        raise RuntimeError("dense evidence is smaller than declared source bytes")
+    return evidence
 
 
 def build_rehearsal(
@@ -152,10 +225,10 @@ def build_rehearsal(
     if dry_run.get("mutated_state"):
         raise RuntimeError("OSM-42A preview reported state mutation")
 
-    expert_evidence = collect_bounded_tree(
+    expert_evidence = collect_expert_source_evidence(
         expert_slice_dir, max_evidence_bytes
     )
-    dense_evidence = collect_bounded_tree(
+    dense_evidence = collect_dense_source_evidence(
         dense_slice_dir, max_evidence_bytes
     )
     execution = load_json(manifest)
