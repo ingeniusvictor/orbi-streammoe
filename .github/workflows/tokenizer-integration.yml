@@ -59,4 +59,7 @@ jobs:
         run: ctest --test-dir build-tokenizer -C Release -R orbi_streammoe_tokenizers_cpp_qwen_tokenizer_tests --output-on-failure -V
 
       - name: Test official Qwen tokenizer parity
-        run: cmake -E env ORBI_QWEN_TOKENIZER_ASSET_ROOT=.orbi-qwen-tokenizer ORBI_QWEN_TOKENIZER_PARITY_JSON=.orbi-qwen-tokenizer/parity.json ctest --test-dir build-tokenizer -C Release -R orbi_streammoe_qwen_official_tokenizer_parity_tests --output-on-failure -V
+        env:
+          ORBI_QWEN_TOKENIZER_ASSET_ROOT: ${{ github.workspace }}/.orbi-qwen-tokenizer
+          ORBI_QWEN_TOKENIZER_PARITY_JSON: ${{ github.workspace }}/.orbi-qwen-tokenizer/parity.json
+        run: ctest --test-dir build-tokenizer -C Release -R orbi_streammoe_qwen_official_tokenizer_parity_tests --output-on-failure -V
