@@ -24,6 +24,12 @@ jobs:
       - name: Fetch strict official safetensors shard headers
         run: python scripts/fetch_qwen_shard_headers.py --metadata-dir build/qwen-official-metadata --output build/qwen-official-range-manifest.json
 
+      - name: Fetch OSM-39F dynamic expert header manifest
+        run: python scripts/fetch_qwen_shard_headers.py --metadata-dir build/qwen-official-metadata --output build/qwen-osm39f-dynamic-range.json --layer 0 --experts 2
+
+      - name: Verify OSM-39F dynamic expert header manifest
+        run: python scripts/test_qwen_dynamic_header_manifest.py build/qwen-osm39f-dynamic-range.json 2
+
       - name: Fetch bounded official BF16 conversion slice
         run: python scripts/fetch_qwen_conversion_slice.py --range-manifest build/qwen-official-range-manifest.json --output-dir build/qwen-official-conversion-slice
 
