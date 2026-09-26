@@ -150,6 +150,17 @@ int main() {
         0U);
     verified.finalize();
 
+    const auto backup = fs::path(journal.string() + ".bak");
+    fs::rename(journal, backup);
+    auto recovered = QpackLayerWriter::open(
+        layer,
+        journal,
+        geometry,
+        0U);
+    recovered.finalize();
+    require(fs::exists(journal), "backup journal must be restored");
+    require(!fs::exists(backup), "recovered backup journal must be consumed");
+
     {
       std::fstream corrupt(
           layer,
@@ -180,6 +191,7 @@ int main() {
         << "  fixed_stride_offsets=PASS\n"
         << "  out_of_order_commits=PASS\n"
         << "  resume_journal=PASS\n"
+        << "  backup_journal_recovery=PASS\n"
         << "  idempotent_replay=PASS\n"
         << "  overwrite_guard=PASS\n"
         << "  readback_checksum=PASS\n"
