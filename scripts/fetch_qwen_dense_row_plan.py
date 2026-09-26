@@ -4,7 +4,7 @@ import json
 import pathlib
 
 from fetch_qwen_conversion_slice import fnv1a64
-from fetch_qwen_shard_headers import fetch_exact_range, shard_url
+from fetch_qwen_shard_headers import MODEL, SNAPSHOT, fetch_exact_range, shard_url
 
 
 def safe_name(tensor: str, first_row: int, row_count: int) -> str:
@@ -21,6 +21,8 @@ def main() -> int:
     plan = json.loads(pathlib.Path(args.plan).read_text(encoding="utf-8"))
     if plan.get("schema_version") != 1:
         raise RuntimeError("unsupported dense row plan schema")
+    if plan.get("model") != MODEL or plan.get("snapshot") != SNAPSHOT:
+        raise RuntimeError("dense row plan does not match pinned Qwen snapshot")
 
     inventory = plan.get("inventory")
     tasks = plan.get("tasks")
