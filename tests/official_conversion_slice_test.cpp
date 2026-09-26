@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <cmath>
 #include <cstddef>
 #include <filesystem>
@@ -6,6 +7,7 @@
 #include <limits>
 #include <stdexcept>
 #include <string>
+#include <vector>
 
 #include "orbi/streammoe/conversion/bf16_slice.hpp"
 
