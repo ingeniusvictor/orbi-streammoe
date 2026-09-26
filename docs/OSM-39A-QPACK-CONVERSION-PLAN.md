@@ -46,19 +46,30 @@ Each entry records:
 
 ## Official Qwen3-Next checkpoint
 
-The pinned official checkpoint currently uses one packed
-`mlp.experts.gate_up_proj` tensor and one packed `mlp.experts.down_proj`
-tensor per decoder layer.
+The pinned official checkpoint uses split expert tensors:
+
+```text
+model.layers.<L>.mlp.experts.<E>.gate_proj.weight
+model.layers.<L>.mlp.experts.<E>.up_proj.weight
+model.layers.<L>.mlp.experts.<E>.down_proj.weight
+```
+
+For 48 layers and 512 experts this yields 73,728 routed-expert source tensors.
+OSM-39A maps them deterministically into the fixed-stride per-layer QPACK expert
+files. The packed `gate_up_proj/down_proj` source form remains supported as a
+compatibility path and is certified by the local fixture, but is not the layout
+used by this pinned official checkpoint.
 
 The official checkpoint also carries `mtp.*` Multi-Token Prediction tensors.
 Those are preserved in the 1:1 source inventory but explicitly marked excluded
 because the current ORBI runtime certifies standard autoregressive generation,
 not Qwen MTP speculative execution.
 
-OSM-39A therefore requires:
+OSM-39A therefore requires for the pinned official checkpoint:
 
-- 48 packed gate/up sources;
-- 48 packed down sources;
+- 73,728 direct routed-expert projection tensors;
+- zero packed gate/up sources;
+- zero packed down sources;
 - no mixed packed/direct expert representation.
 
 ## Target mapping
