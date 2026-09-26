@@ -128,7 +128,8 @@ int main() {
         special.token_ids == std::vector<std::size_t>({12U}),
         "special-token encode mismatch");
 
-    const std::vector<std::size_t> eos_only{12U};\n    const auto keep_special = tokenizer->decode(eos_only, false);
+    const std::vector<std::size_t> eos_only{12U};
+    const auto keep_special = tokenizer->decode(eos_only, false);
     require(keep_special.decoded, keep_special.diagnostic);
     require(
         keep_special.text == "<|im_end|>",
