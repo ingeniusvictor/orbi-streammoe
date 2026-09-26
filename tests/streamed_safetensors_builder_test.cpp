@@ -140,9 +140,15 @@ int main() {
       std::fstream corrupt(
           output, std::ios::binary | std::ios::in | std::ios::out);
       const auto offset = reader.absolute_offset(base + ".weight");
+      corrupt.seekg(static_cast<std::streamoff>(offset), std::ios::beg);
+      char original = 0;
+      corrupt.read(&original, 1);
+      corrupt.clear();
       corrupt.seekp(static_cast<std::streamoff>(offset), std::ios::beg);
-      const char zero = 0;
-      corrupt.write(&zero, 1);
+      const char changed = static_cast<char>(
+          static_cast<unsigned char>(original) ^ 0x01U);
+      corrupt.write(&changed, 1);
+      corrupt.flush();
     }
 
     bool corruption_detected = false;
