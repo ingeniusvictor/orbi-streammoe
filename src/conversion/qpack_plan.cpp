@@ -104,6 +104,15 @@ QpackConversionPlanEntry make_entry(
   QpackConversionPlanEntry entry;
   entry.source_tensor = name;
   entry.source_shard = shard;
+
+  if (name.starts_with("mtp.")) {
+    entry.tensor_class = QpackConversionClass::auxiliary_mtp;
+    entry.action = QpackConversionAction::exclude_auxiliary_mtp;
+    entry.target_file = "excluded/mtp";
+    entry.target_path = name;
+    return entry;
+  }
+
   entry.layer_index = parse_layer_index(name);
 
   if (entry.layer_index.has_value() &&
@@ -215,7 +224,13 @@ void validate_qpack_conversion_plan(const QpackConversionPlan& plan) {
           "qpack plan: duplicate source tensor: " + entry.source_tensor);
     }
 
-    if (entry.tensor_class == QpackConversionClass::routed_expert) {
+    if (entry.tensor_class == QpackConversionClass::auxiliary_mtp) {
+      if (entry.action != QpackConversionAction::exclude_auxiliary_mtp ||
+          entry.target_file != "excluded/mtp" ||
+          !entry.source_tensor.starts_with("mtp.")) {
+        throw std::runtime_error("qpack plan: invalid auxiliary MTP mapping");
+      }
+    } else if (entry.tensor_class == QpackConversionClass::routed_expert) {
       if (!entry.layer_index.has_value()) {
         throw std::runtime_error("qpack plan: routed expert missing layer index");
       }
@@ -270,6 +285,7 @@ const char* to_string(QpackConversionClass value) noexcept {
     case QpackConversionClass::global_dense: return "global_dense";
     case QpackConversionClass::layer_dense: return "layer_dense";
     case QpackConversionClass::routed_expert: return "routed_expert";
+    case QpackConversionClass::auxiliary_mtp: return "auxiliary_mtp";
   }
   return "unknown";
 }
@@ -284,6 +300,8 @@ const char* to_string(QpackConversionAction value) noexcept {
       return "split_packed_down_experts";
     case QpackConversionAction::direct_expert_quantize:
       return "direct_expert_quantize";
+    case QpackConversionAction::exclude_auxiliary_mtp:
+      return "exclude_auxiliary_mtp";
   }
   return "unknown";
 }
