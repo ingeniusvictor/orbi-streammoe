@@ -148,7 +148,6 @@ def main() -> int:
             args.hidden_size,
             args.intermediate_size,
         )
-        experts.append(expert)
         total += fetched
 
     summary = {
