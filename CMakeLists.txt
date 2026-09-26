@@ -268,6 +268,12 @@ if(ORBI_STREAMMOE_BUILD_TESTS)
   target_link_libraries(orbi_streammoe_sharded_checkpoint_contract_tests PRIVATE orbi_streammoe_core)
   target_compile_features(orbi_streammoe_sharded_checkpoint_contract_tests PRIVATE cxx_std_20)
 
+  add_executable(orbi_streammoe_official_checkpoint_metadata_tests
+    tests/official_checkpoint_metadata_test.cpp
+  )
+  target_link_libraries(orbi_streammoe_official_checkpoint_metadata_tests PRIVATE orbi_streammoe_core)
+  target_compile_features(orbi_streammoe_official_checkpoint_metadata_tests PRIVATE cxx_std_20)
+
   add_executable(orbi_streammoe_greedy_token_session_tests
     tests/greedy_token_session_test.cpp
   )

@@ -61,9 +61,32 @@ std::string layer_prefix(std::size_t layer) {
   return "model.layers." + std::to_string(layer) + ".";
 }
 
+void require_expert_inventory(
+    const std::unordered_map<std::string, std::string>& weight_map,
+    const std::string& prefix,
+    std::size_t num_experts) {
+  const auto packed_gate_up = prefix + "mlp.experts.gate_up_proj";
+  const auto packed_down = prefix + "mlp.experts.down_proj";
+  if (weight_map.contains(packed_gate_up) ||
+      weight_map.contains(packed_down)) {
+    require_tensor(weight_map, packed_gate_up);
+    require_tensor(weight_map, packed_down);
+    return;
+  }
+
+  for (std::size_t expert = 0U; expert < num_experts; ++expert) {
+    const auto ep =
+        prefix + "mlp.experts." + std::to_string(expert) + ".";
+    require_tensor(weight_map, ep + "gate_proj.weight");
+    require_tensor(weight_map, ep + "up_proj.weight");
+    require_tensor(weight_map, ep + "down_proj.weight");
+  }
+}
+
 void require_common_layer(
     const std::unordered_map<std::string, std::string>& weight_map,
-    std::size_t layer) {
+    std::size_t layer,
+    std::size_t num_experts) {
   const auto p = layer_prefix(layer);
   require_tensor(weight_map, p + "input_layernorm.weight");
   require_tensor(weight_map, p + "post_attention_layernorm.weight");
@@ -72,8 +95,7 @@ void require_common_layer(
   require_tensor(weight_map, p + "mlp.shared_expert.up_proj.weight");
   require_tensor(weight_map, p + "mlp.shared_expert.down_proj.weight");
   require_tensor(weight_map, p + "mlp.shared_expert_gate.weight");
-  require_tensor(weight_map, p + "mlp.experts.gate_up_proj");
-  require_tensor(weight_map, p + "mlp.experts.down_proj");
+  require_expert_inventory(weight_map, p, num_experts);
 }
 
 void require_linear_layer(
@@ -190,7 +212,7 @@ inspect_qwen3_next_sharded_checkpoint(
   // numerical runtime already certifies repeating this selector for all layers.
   const auto block = std::min(out.full_attention_interval, out.num_hidden_layers);
   for (std::size_t layer = 0U; layer < block; ++layer) {
-    require_common_layer(out.weight_map, layer);
+    require_common_layer(out.weight_map, layer, out.num_experts);
     if (out.is_linear_layer(layer)) {
       require_linear_layer(out.weight_map, layer);
     } else {
@@ -199,7 +221,10 @@ inspect_qwen3_next_sharded_checkpoint(
   }
 
   // The final layer must exist too, guarding truncated indexes.
-  require_common_layer(out.weight_map, out.num_hidden_layers - 1U);
+  require_common_layer(
+      out.weight_map,
+      out.num_hidden_layers - 1U,
+      out.num_experts);
   if (out.is_linear_layer(out.num_hidden_layers - 1U)) {
     require_linear_layer(out.weight_map, out.num_hidden_layers - 1U);
   } else {
