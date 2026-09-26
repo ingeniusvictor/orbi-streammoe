@@ -350,7 +350,7 @@ if(ORBI_STREAMMOE_BUILD_TESTS)
   add_executable(orbi_streammoe_multi_expert_orchestrator_tests
     tests/multi_expert_orchestrator_test.cpp
   )
-  target_link_libraries(orbi_streammoe_multi_expert_orchestrator_tests PRIVATE orbi_streammoe_core)
+  target_link_libraries(orbi_streammoe_multi_expert_orchestrator_tests PRIVATE orbi_streammoe_core nlohmann_json::nlohmann_json)
   target_compile_features(orbi_streammoe_multi_expert_orchestrator_tests PRIVATE cxx_std_20)
 
   add_executable(orbi_streammoe_official_multi_expert_conversion_tests
