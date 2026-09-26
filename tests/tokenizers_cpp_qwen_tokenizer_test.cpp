@@ -53,7 +53,7 @@ fs::path write_fixture(const fs::path& root) {
         "pre_tokenizer":{
           "type":"Sequence",
           "pretokenizers":[
-            {"type":"Split","pattern":{"Regex":"x(?!)"},"behavior":"Isolated","invert":false},
+            {"type":"Split","pattern":{"Regex":"x"},"behavior":"Isolated","invert":false},
             {"type":"ByteLevel","add_prefix_space":false,"trim_offsets":true,"use_regex":false}
           ]
         },
@@ -128,13 +128,13 @@ int main() {
         special.token_ids == std::vector<std::size_t>({12U}),
         "special-token encode mismatch");
 
-    const auto keep_special = tokenizer->decode({12U}, false);
+    const std::vector<std::size_t> eos_only{12U};\n    const auto keep_special = tokenizer->decode(eos_only, false);
     require(keep_special.decoded, keep_special.diagnostic);
     require(
         keep_special.text == "<|im_end|>",
         "special-token decode must preserve token when requested");
 
-    const auto skip_special = tokenizer->decode({12U}, true);
+    const auto skip_special = tokenizer->decode(eos_only, true);
     require(skip_special.decoded, skip_special.diagnostic);
     require(
         skip_special.text.empty(),
