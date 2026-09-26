@@ -33,9 +33,9 @@ model.safetensors.index.json weight map:
 - model.embed_tokens.weight;
 - layer 0 input RMSNorm;
 - layer 0 DeltaNet in_proj_qkvz;
-- layer 0 packed expert gate_up_proj;
+- layer 0 expert-0 gate_proj;
 - layer 3 GQA q_proj;
-- layer 3 packed expert down_proj;
+- layer 3 expert-0 down_proj;
 - model.norm.weight;
 - lm_head.weight.
 
