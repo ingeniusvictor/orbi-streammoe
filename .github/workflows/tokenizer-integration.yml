@@ -9,6 +9,10 @@ on:
       - "src/tokenizer/**"
       - "tests/tokenizers_cpp_qwen_tokenizer_test.cpp"
       - "tests/qwen_official_tokenizer_parity_test.cpp"
+      - "tests/qwen_chat_template_parity_test.cpp"
+      - "include/orbi/streammoe/tokenizer/qwen_chat_template.hpp"
+      - "src/tokenizer/qwen_chat_template.cpp"
+      - "docs/OSM-44B-NATIVE-CHAT-RENDERER-PARITY.md"
       - "scripts/qwen_tokenizer_reference.py"
       - "scripts/qwen_chat_template_reference.py"
       - "scripts/test_qwen_chat_template_contract.py"
@@ -24,6 +28,10 @@ on:
       - "src/tokenizer/**"
       - "tests/tokenizers_cpp_qwen_tokenizer_test.cpp"
       - "tests/qwen_official_tokenizer_parity_test.cpp"
+      - "tests/qwen_chat_template_parity_test.cpp"
+      - "include/orbi/streammoe/tokenizer/qwen_chat_template.hpp"
+      - "src/tokenizer/qwen_chat_template.cpp"
+      - "docs/OSM-44B-NATIVE-CHAT-RENDERER-PARITY.md"
       - "scripts/qwen_tokenizer_reference.py"
       - "scripts/qwen_chat_template_reference.py"
       - "scripts/test_qwen_chat_template_contract.py"
@@ -64,8 +72,8 @@ jobs:
       - name: Configure optional tokenizer backend
         run: cmake -S . -B build-tokenizer -DORBI_STREAMMOE_BUILD_TESTS=ON -DORBI_STREAMMOE_ENABLE_TOKENIZERS_CPP=ON
 
-      - name: Build tokenizer adapter tests and production text probes
-        run: cmake --build build-tokenizer --config Release --target orbi_streammoe_tokenizers_cpp_qwen_tokenizer_tests orbi_streammoe_qwen_official_tokenizer_parity_tests orbi_streammoe_probe_text_first_token orbi_streammoe_probe_bounded_generation
+      - name: Build tokenizer adapter, chat parity, and production text probes
+        run: cmake --build build-tokenizer --config Release --target orbi_streammoe_tokenizers_cpp_qwen_tokenizer_tests orbi_streammoe_qwen_official_tokenizer_parity_tests orbi_streammoe_qwen_chat_template_parity_tests orbi_streammoe_probe_text_first_token orbi_streammoe_probe_bounded_generation
 
       - name: Test tokenizer adapter
         run: ctest --test-dir build-tokenizer -C Release -R orbi_streammoe_tokenizers_cpp_qwen_tokenizer_tests --output-on-failure -V
@@ -75,3 +83,9 @@ jobs:
           ORBI_QWEN_TOKENIZER_ASSET_ROOT: ${{ github.workspace }}/.orbi-qwen-tokenizer
           ORBI_QWEN_TOKENIZER_PARITY_JSON: ${{ github.workspace }}/.orbi-qwen-tokenizer/parity.json
         run: ctest --test-dir build-tokenizer -C Release -R orbi_streammoe_qwen_official_tokenizer_parity_tests --output-on-failure -V
+
+      - name: Test OSM-44B native chat renderer parity
+        env:
+          ORBI_QWEN_TOKENIZER_ASSET_ROOT: ${{ github.workspace }}/.orbi-qwen-tokenizer
+          ORBI_QWEN_CHAT_TEMPLATE_REFERENCE_JSON: ${{ github.workspace }}/.orbi-qwen-tokenizer/chat-template.json
+        run: ctest --test-dir build-tokenizer -C Release -R orbi_streammoe_qwen_chat_template_parity_tests --output-on-failure -V
