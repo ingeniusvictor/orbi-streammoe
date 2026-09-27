@@ -103,6 +103,12 @@ jobs:
       - name: Verify OSM-42D tooling syntax
         run: python -m py_compile scripts/certify_qwen_windows_conversion.py scripts/test_qwen_windows_conversion_evidence.py
 
+      - name: Verify OSM-43A official runtime load gate
+        run: python scripts/test_qwen_runtime_load_gate.py
+
+      - name: Verify OSM-43A tooling syntax
+        run: python -m py_compile scripts/certify_qwen_runtime_load.py scripts/test_qwen_runtime_load_gate.py
+
       - name: Install Linux Vulkan software driver
         if: runner.os == 'Linux'
         run: |
