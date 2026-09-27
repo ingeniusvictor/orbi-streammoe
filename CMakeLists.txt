@@ -199,6 +199,12 @@ add_executable(orbi_streammoe_probe_text_first_token
 target_link_libraries(orbi_streammoe_probe_text_first_token PRIVATE orbi_streammoe_core nlohmann_json::nlohmann_json)
 target_compile_features(orbi_streammoe_probe_text_first_token PRIVATE cxx_std_20)
 
+add_executable(orbi_streammoe_probe_bounded_generation
+  tools/probe_bounded_generation.cpp
+)
+target_link_libraries(orbi_streammoe_probe_bounded_generation PRIVATE orbi_streammoe_core nlohmann_json::nlohmann_json)
+target_compile_features(orbi_streammoe_probe_bounded_generation PRIVATE cxx_std_20)
+
 if(ORBI_STREAMMOE_BUILD_TESTS)
   enable_testing()
 

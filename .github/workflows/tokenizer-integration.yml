@@ -52,8 +52,8 @@ jobs:
       - name: Configure optional tokenizer backend
         run: cmake -S . -B build-tokenizer -DORBI_STREAMMOE_BUILD_TESTS=ON -DORBI_STREAMMOE_ENABLE_TOKENIZERS_CPP=ON
 
-      - name: Build tokenizer adapter tests and OSM-43C probe
-        run: cmake --build build-tokenizer --config Release --target orbi_streammoe_tokenizers_cpp_qwen_tokenizer_tests orbi_streammoe_qwen_official_tokenizer_parity_tests orbi_streammoe_probe_text_first_token
+      - name: Build tokenizer adapter tests and production text probes
+        run: cmake --build build-tokenizer --config Release --target orbi_streammoe_tokenizers_cpp_qwen_tokenizer_tests orbi_streammoe_qwen_official_tokenizer_parity_tests orbi_streammoe_probe_text_first_token orbi_streammoe_probe_bounded_generation
 
       - name: Test tokenizer adapter
         run: ctest --test-dir build-tokenizer -C Release -R orbi_streammoe_tokenizers_cpp_qwen_tokenizer_tests --output-on-failure -V
