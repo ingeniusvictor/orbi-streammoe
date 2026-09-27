@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstddef>
+#include <cstdint>
 #include <memory>
 #include <optional>
 #include <string>
@@ -33,6 +34,10 @@ struct QwenGreedyTextSessionResult {
   QwenGreedySessionStopReason stop_reason{
       QwenGreedySessionStopReason::invalid_request};
   std::size_t model_steps{};
+  std::uint64_t prompt_prefill_ns{};
+  std::uint64_t decode_ns{};
+  std::vector<std::uint64_t> prompt_step_durations_ns;
+  std::vector<std::uint64_t> decode_step_durations_ns;
   std::vector<std::size_t> prompt_tokens;
   std::vector<std::size_t> generated_tokens;
   std::vector<float> generated_logits;

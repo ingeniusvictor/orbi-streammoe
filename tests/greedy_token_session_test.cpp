@@ -729,6 +729,34 @@ int main() {
             prompt.size() + result.generated_tokens.size() - 1U,
         "autoregressive model-step accounting mismatch");
 
+    require(
+        result.prompt_step_durations_ns.size() == prompt.size(),
+        "prefill timing cardinality mismatch");
+    require(
+        result.decode_step_durations_ns.size() ==
+            result.generated_tokens.size() - 1U,
+        "decode timing cardinality mismatch");
+    require(
+        result.prompt_prefill_ns > 0U,
+        "prefill aggregate latency must be non-zero");
+    require(
+        result.decode_ns > 0U,
+        "decode aggregate latency must be non-zero");
+    std::uint64_t expected_prefill_ns = 0U;
+    for (const auto value : result.prompt_step_durations_ns) {
+      expected_prefill_ns += value;
+    }
+    require(
+        expected_prefill_ns == result.prompt_prefill_ns,
+        "prefill aggregate latency mismatch");
+    std::uint64_t expected_decode_ns = 0U;
+    for (const auto value : result.decode_step_durations_ns) {
+      expected_decode_ns += value;
+    }
+    require(
+        expected_decode_ns == result.decode_ns,
+        "decode aggregate latency mismatch");
+
     QwenGreedySessionOptions stop_options = options;
     stop_options.max_new_tokens = 5U;
     stop_options.stop_token_ids = {expected_tokens.front()};

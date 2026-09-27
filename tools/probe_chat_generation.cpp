@@ -229,6 +229,12 @@ int main(int argc, char** argv) {
         {"generated_logits", result.generated_logits},
         {"generated_text", result.text},
         {"model_steps", result.model_steps},
+        {"phase_latency", {
+            {"prompt_prefill_ns", result.prompt_prefill_ns},
+            {"decode_ns", result.decode_ns},
+            {"prompt_step_durations_ns", result.prompt_step_durations_ns},
+            {"decode_step_durations_ns", result.decode_step_durations_ns},
+        }},
         {"model", {
             {"hidden_size", session->token_session()->model_shell()->hidden_size()},
             {"vocab_size", session->vocab_size()},
@@ -272,6 +278,7 @@ int main(int argc, char** argv) {
             {"tool_calling_validated", false},
             {"tokens_per_second_measured", false},
             {"ram_vram_profile_measured", false},
+            {"prefill_decode_latency_measured", true},
         }},
     };
 

@@ -1,6 +1,7 @@
 #include "orbi/streammoe/session/greedy_token_session.hpp"
 
 #include <algorithm>
+#include <chrono>
 #include <exception>
 #include <memory>
 #include <string>
@@ -149,12 +150,19 @@ QwenGreedyTokenSession::generate(
 
     QwenCheckpointModelStepResult step;
     for (const auto token : prompt_tokens) {
+      const auto step_start = std::chrono::steady_clock::now();
       step = impl_->model.step_greedy(
           checkpoint,
           context,
           expert_cache,
           token,
           options.lm_head_chunk_rows);
+      const auto step_end = std::chrono::steady_clock::now();
+      const auto step_ns = static_cast<std::uint64_t>(
+          std::chrono::duration_cast<std::chrono::nanoseconds>(
+              step_end - step_start).count());
+      result.prompt_step_durations_ns.push_back(step_ns);
+      result.prompt_prefill_ns += step_ns;
       ++result.model_steps;
 
       if (!step.executed) {
@@ -184,12 +192,19 @@ QwenGreedyTokenSession::generate(
     }
 
     while (result.generated_tokens.size() < options.max_new_tokens) {
+      const auto step_start = std::chrono::steady_clock::now();
       step = impl_->model.step_greedy(
           checkpoint,
           context,
           expert_cache,
           result.generated_tokens.back(),
           options.lm_head_chunk_rows);
+      const auto step_end = std::chrono::steady_clock::now();
+      const auto step_ns = static_cast<std::uint64_t>(
+          std::chrono::duration_cast<std::chrono::nanoseconds>(
+              step_end - step_start).count());
+      result.decode_step_durations_ns.push_back(step_ns);
+      result.decode_ns += step_ns;
       ++result.model_steps;
 
       if (!step.executed) {

@@ -164,6 +164,10 @@ QwenGreedyTextSession::generate(
     result.token_session_executed = token_result.executed;
     result.stop_reason = token_result.stop_reason;
     result.model_steps = token_result.model_steps;
+    result.prompt_prefill_ns = token_result.prompt_prefill_ns;
+    result.decode_ns = token_result.decode_ns;
+    result.prompt_step_durations_ns = token_result.prompt_step_durations_ns;
+    result.decode_step_durations_ns = token_result.decode_step_durations_ns;
     result.prompt_tokens = token_result.prompt_tokens.empty()
         ? result.prompt_tokens
         : token_result.prompt_tokens;
