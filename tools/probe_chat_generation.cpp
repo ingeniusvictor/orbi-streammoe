@@ -235,6 +235,24 @@ int main(int argc, char** argv) {
             {"prompt_step_durations_ns", result.prompt_step_durations_ns},
             {"decode_step_durations_ns", result.decode_step_durations_ns},
         }},
+        {"phase_cache", {
+            {"prefill", {
+                {"host_hits", result.prefill_cache.host_hits},
+                {"host_misses", result.prefill_cache.host_misses},
+                {"gpu_hits", result.prefill_cache.gpu_hits},
+                {"gpu_misses", result.prefill_cache.gpu_misses},
+                {"gpu_loads", result.prefill_cache.gpu_loads},
+                {"gpu_evictions", result.prefill_cache.gpu_evictions},
+            }},
+            {"decode", {
+                {"host_hits", result.decode_cache.host_hits},
+                {"host_misses", result.decode_cache.host_misses},
+                {"gpu_hits", result.decode_cache.gpu_hits},
+                {"gpu_misses", result.decode_cache.gpu_misses},
+                {"gpu_loads", result.decode_cache.gpu_loads},
+                {"gpu_evictions", result.decode_cache.gpu_evictions},
+            }},
+        }},
         {"model", {
             {"hidden_size", session->token_session()->model_shell()->hidden_size()},
             {"vocab_size", session->vocab_size()},
@@ -279,6 +297,7 @@ int main(int argc, char** argv) {
             {"tokens_per_second_measured", false},
             {"ram_vram_profile_measured", false},
             {"prefill_decode_latency_measured", true},
+            {"prefill_decode_cache_activity_attributed", true},
         }},
     };
 
