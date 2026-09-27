@@ -91,6 +91,12 @@ jobs:
         if: runner.os == 'Windows'
         run: python scripts/probe_qwen_windows_host.py --target-output build/osm42b/checkpoint --expert-work build/osm42b/expert-work --dense-work build/osm42b/dense-work --output build/osm42b/windows-host-probe.json --allow-missing-vulkan
 
+      - name: Verify OSM-42C guarded Windows start
+        run: python scripts/test_qwen_windows_guarded_start.py
+
+      - name: Verify OSM-42C tooling syntax
+        run: python -m py_compile scripts/guard_qwen_windows_start.py scripts/test_qwen_windows_guarded_start.py
+
       - name: Install Linux Vulkan software driver
         if: runner.os == 'Linux'
         run: |
