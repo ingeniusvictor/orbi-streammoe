@@ -225,4 +225,8 @@ VulkanResidentExpertCacheStats VulkanResidentExpertCache::stats() const noexcept
   };
 }
 
+ExpertCacheStats VulkanResidentExpertCache::host_stats() const noexcept {
+  return host_cache_.stats();
+}
+
 }  // namespace orbi::streammoe
