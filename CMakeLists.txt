@@ -181,6 +181,12 @@ add_executable(orbi_streammoe_finalize_full_checkpoint
 target_link_libraries(orbi_streammoe_finalize_full_checkpoint PRIVATE orbi_streammoe_core)
 target_compile_features(orbi_streammoe_finalize_full_checkpoint PRIVATE cxx_std_20)
 
+add_executable(orbi_streammoe_probe_checkpoint_load
+  tools/probe_checkpoint_load.cpp
+)
+target_link_libraries(orbi_streammoe_probe_checkpoint_load PRIVATE orbi_streammoe_core nlohmann_json::nlohmann_json)
+target_compile_features(orbi_streammoe_probe_checkpoint_load PRIVATE cxx_std_20)
+
 if(ORBI_STREAMMOE_BUILD_TESTS)
   enable_testing()
 
