@@ -160,6 +160,12 @@ jobs:
       - name: Verify OSM-46A tooling syntax
         run: python -m py_compile scripts/build_qwen_windows_pilot_pack.py scripts/run_qwen_windows_pilot_pack.py scripts/test_qwen_windows_pilot_pack.py
 
+      - name: Verify OSM-46B Windows pilot evidence seal
+        run: python scripts/test_qwen_windows_pilot_seal.py
+
+      - name: Verify OSM-46B tooling syntax
+        run: python -m py_compile scripts/certify_qwen_windows_pilot.py scripts/test_qwen_windows_pilot_seal.py
+
       - name: Install Linux Vulkan software driver
         if: runner.os == 'Linux'
         run: |
