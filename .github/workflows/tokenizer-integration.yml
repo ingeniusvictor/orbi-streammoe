@@ -13,6 +13,10 @@ on:
       - "include/orbi/streammoe/tokenizer/qwen_chat_template.hpp"
       - "src/tokenizer/qwen_chat_template.cpp"
       - "docs/OSM-44B-NATIVE-CHAT-RENDERER-PARITY.md"
+      - "tools/probe_chat_generation.cpp"
+      - "scripts/certify_qwen_chat_generation.py"
+      - "scripts/test_qwen_chat_generation_gate.py"
+      - "docs/OSM-44C-CHAT-BOUNDED-GENERATION.md"
       - "scripts/qwen_tokenizer_reference.py"
       - "scripts/qwen_chat_template_reference.py"
       - "scripts/test_qwen_chat_template_contract.py"
@@ -32,6 +36,10 @@ on:
       - "include/orbi/streammoe/tokenizer/qwen_chat_template.hpp"
       - "src/tokenizer/qwen_chat_template.cpp"
       - "docs/OSM-44B-NATIVE-CHAT-RENDERER-PARITY.md"
+      - "tools/probe_chat_generation.cpp"
+      - "scripts/certify_qwen_chat_generation.py"
+      - "scripts/test_qwen_chat_generation_gate.py"
+      - "docs/OSM-44C-CHAT-BOUNDED-GENERATION.md"
       - "scripts/qwen_tokenizer_reference.py"
       - "scripts/qwen_chat_template_reference.py"
       - "scripts/test_qwen_chat_template_contract.py"
@@ -73,7 +81,7 @@ jobs:
         run: cmake -S . -B build-tokenizer -DORBI_STREAMMOE_BUILD_TESTS=ON -DORBI_STREAMMOE_ENABLE_TOKENIZERS_CPP=ON
 
       - name: Build tokenizer adapter, chat parity, and production text probes
-        run: cmake --build build-tokenizer --config Release --target orbi_streammoe_tokenizers_cpp_qwen_tokenizer_tests orbi_streammoe_qwen_official_tokenizer_parity_tests orbi_streammoe_qwen_chat_template_parity_tests orbi_streammoe_probe_text_first_token orbi_streammoe_probe_bounded_generation
+        run: cmake --build build-tokenizer --config Release --target orbi_streammoe_tokenizers_cpp_qwen_tokenizer_tests orbi_streammoe_qwen_official_tokenizer_parity_tests orbi_streammoe_qwen_chat_template_parity_tests orbi_streammoe_probe_text_first_token orbi_streammoe_probe_bounded_generation orbi_streammoe_probe_chat_generation
 
       - name: Test tokenizer adapter
         run: ctest --test-dir build-tokenizer -C Release -R orbi_streammoe_tokenizers_cpp_qwen_tokenizer_tests --output-on-failure -V
