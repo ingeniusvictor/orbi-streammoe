@@ -81,6 +81,16 @@ jobs:
       - name: Verify OSM-42A tooling syntax
         run: python -m py_compile scripts/rehearse_qwen_production.py scripts/test_qwen_production_rehearsal.py
 
+      - name: Verify OSM-42B Windows hardware preflight
+        run: python scripts/test_qwen_windows_preflight.py
+
+      - name: Verify OSM-42B tooling syntax
+        run: python -m py_compile scripts/probe_qwen_windows_host.py scripts/authorize_qwen_windows_conversion.py scripts/test_qwen_windows_preflight.py
+
+      - name: Exercise native Windows OSM-42B host probe
+        if: runner.os == 'Windows'
+        run: python scripts/probe_qwen_windows_host.py --target-output build/osm42b/checkpoint --expert-work build/osm42b/expert-work --dense-work build/osm42b/dense-work --output build/osm42b/windows-host-probe.json --allow-missing-vulkan
+
       - name: Install Linux Vulkan software driver
         if: runner.os == 'Linux'
         run: |
