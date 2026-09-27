@@ -50,6 +50,7 @@ class VulkanResidentExpertCache {
       std::uint32_t expert) const noexcept;
 
   [[nodiscard]] VulkanResidentExpertCacheStats stats() const noexcept;
+  [[nodiscard]] ExpertCacheStats host_stats() const noexcept;
 
  private:
   struct Node {

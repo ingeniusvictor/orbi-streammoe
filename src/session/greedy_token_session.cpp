@@ -20,6 +20,21 @@ bool contains_token(
   return std::find(tokens.begin(), tokens.end(), token) != tokens.end();
 }
 
+QwenExpertCachePhaseDelta cache_delta(
+    const ExpertCacheStats& host_before,
+    const ExpertCacheStats& host_after,
+    const VulkanResidentExpertCacheStats& gpu_before,
+    const VulkanResidentExpertCacheStats& gpu_after) noexcept {
+  return {
+      .host_hits = host_after.hits - host_before.hits,
+      .host_misses = host_after.misses - host_before.misses,
+      .gpu_hits = gpu_after.hits - gpu_before.hits,
+      .gpu_misses = gpu_after.misses - gpu_before.misses,
+      .gpu_loads = gpu_after.loads - gpu_before.loads,
+      .gpu_evictions = gpu_after.evictions - gpu_before.evictions,
+  };
+}
+
 }  // namespace
 
 struct QwenGreedyTokenSession::Impl {
@@ -148,6 +163,9 @@ QwenGreedyTokenSession::generate(
 
     result.prompt_tokens.assign(prompt_tokens.begin(), prompt_tokens.end());
 
+    const auto host_before_prefill = expert_cache.host_stats();
+    const auto gpu_before_prefill = expert_cache.stats();
+
     QwenCheckpointModelStepResult step;
     for (const auto token : prompt_tokens) {
       const auto step_start = std::chrono::steady_clock::now();
@@ -173,6 +191,14 @@ QwenGreedyTokenSession::generate(
       }
     }
 
+    const auto host_after_prefill = expert_cache.host_stats();
+    const auto gpu_after_prefill = expert_cache.stats();
+    result.prefill_cache = cache_delta(
+        host_before_prefill,
+        host_after_prefill,
+        gpu_before_prefill,
+        gpu_after_prefill);
+
     auto append_prediction =
         [&](const QwenCheckpointModelStepResult& prediction) {
           result.generated_tokens.push_back(prediction.greedy.token_id);
@@ -184,6 +210,11 @@ QwenGreedyTokenSession::generate(
     if (contains_token(
             options.stop_token_ids,
             result.generated_tokens.back())) {
+      result.decode_cache = cache_delta(
+          host_after_prefill,
+          expert_cache.host_stats(),
+          gpu_after_prefill,
+          expert_cache.stats());
       result.executed = true;
       result.stop_reason = QwenGreedySessionStopReason::stop_token;
       result.diagnostic =
@@ -218,6 +249,11 @@ QwenGreedyTokenSession::generate(
       if (contains_token(
               options.stop_token_ids,
               result.generated_tokens.back())) {
+        result.decode_cache = cache_delta(
+            host_after_prefill,
+            expert_cache.host_stats(),
+            gpu_after_prefill,
+            expert_cache.stats());
         result.executed = true;
         result.stop_reason = QwenGreedySessionStopReason::stop_token;
         result.diagnostic =
@@ -226,6 +262,11 @@ QwenGreedyTokenSession::generate(
       }
     }
 
+    result.decode_cache = cache_delta(
+        host_after_prefill,
+        expert_cache.host_stats(),
+        gpu_after_prefill,
+        expert_cache.stats());
     result.executed = true;
     result.stop_reason = QwenGreedySessionStopReason::max_new_tokens;
     result.diagnostic =

@@ -148,6 +148,12 @@ jobs:
       - name: Verify OSM-45B tooling syntax
         run: python -m py_compile scripts/certify_qwen_phase_latency.py scripts/test_qwen_phase_latency.py
 
+      - name: Verify OSM-45C cache phase attribution
+        run: python scripts/test_qwen_cache_phase.py
+
+      - name: Verify OSM-45C tooling syntax
+        run: python -m py_compile scripts/certify_qwen_cache_phase.py scripts/test_qwen_cache_phase.py
+
       - name: Install Linux Vulkan software driver
         if: runner.os == 'Linux'
         run: |

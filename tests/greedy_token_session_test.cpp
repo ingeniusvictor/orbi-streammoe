@@ -700,6 +700,9 @@ int main() {
     options.lm_head_chunk_rows = chunk_rows;
     options.reset_before_prompt = true;
 
+    const auto host_stats_before_session = session_gpu.host_stats();
+    const auto gpu_stats_before_session = session_gpu.stats();
+
     const auto result = session->generate(
         checkpoint,
         *context,
@@ -757,6 +760,36 @@ int main() {
         expected_decode_ns == result.decode_ns,
         "decode aggregate latency mismatch");
 
+    const auto host_stats_after_session = session_gpu.host_stats();
+    const auto gpu_stats_after_session = session_gpu.stats();
+    require(
+        result.prefill_cache.host_hits + result.decode_cache.host_hits ==
+            host_stats_after_session.hits - host_stats_before_session.hits,
+        "host cache hit phase attribution mismatch");
+    require(
+        result.prefill_cache.host_misses + result.decode_cache.host_misses ==
+            host_stats_after_session.misses - host_stats_before_session.misses,
+        "host cache miss phase attribution mismatch");
+    require(
+        result.prefill_cache.gpu_hits + result.decode_cache.gpu_hits ==
+            gpu_stats_after_session.hits - gpu_stats_before_session.hits,
+        "GPU cache hit phase attribution mismatch");
+    require(
+        result.prefill_cache.gpu_misses + result.decode_cache.gpu_misses ==
+            gpu_stats_after_session.misses - gpu_stats_before_session.misses,
+        "GPU cache miss phase attribution mismatch");
+    require(
+        result.prefill_cache.gpu_loads + result.decode_cache.gpu_loads ==
+            gpu_stats_after_session.loads - gpu_stats_before_session.loads,
+        "GPU cache load phase attribution mismatch");
+    require(
+        result.prefill_cache.gpu_evictions + result.decode_cache.gpu_evictions ==
+            gpu_stats_after_session.evictions - gpu_stats_before_session.evictions,
+        "GPU cache eviction phase attribution mismatch");
+    require(
+        result.prefill_cache.gpu_misses > 0U,
+        "prefill must exercise routed expert cache");
+
     QwenGreedySessionOptions stop_options = options;
     stop_options.max_new_tokens = 5U;
     stop_options.stop_token_ids = {expected_tokens.front()};
@@ -778,6 +811,15 @@ int main() {
     require(
         stopped.model_steps == prompt.size(),
         "stop-token prompt step count mismatch");
+
+    require(
+        stopped.decode_cache.host_hits == 0U &&
+        stopped.decode_cache.host_misses == 0U &&
+        stopped.decode_cache.gpu_hits == 0U &&
+        stopped.decode_cache.gpu_misses == 0U &&
+        stopped.decode_cache.gpu_loads == 0U &&
+        stopped.decode_cache.gpu_evictions == 0U,
+        "first-token stop must have zero decode cache activity");
 
     QwenGreedySessionOptions one_options = options;
     one_options.max_new_tokens = 1U;

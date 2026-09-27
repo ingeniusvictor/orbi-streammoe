@@ -30,6 +30,15 @@ enum class QwenGreedySessionStopReason {
   invalid_request,
 };
 
+struct QwenExpertCachePhaseDelta {
+  std::size_t host_hits{};
+  std::size_t host_misses{};
+  std::size_t gpu_hits{};
+  std::size_t gpu_misses{};
+  std::size_t gpu_loads{};
+  std::size_t gpu_evictions{};
+};
+
 struct QwenGreedySessionResult {
   bool executed{};
   QwenGreedySessionStopReason stop_reason{
@@ -39,6 +48,8 @@ struct QwenGreedySessionResult {
   std::uint64_t decode_ns{};
   std::vector<std::uint64_t> prompt_step_durations_ns;
   std::vector<std::uint64_t> decode_step_durations_ns;
+  QwenExpertCachePhaseDelta prefill_cache;
+  QwenExpertCachePhaseDelta decode_cache;
   std::vector<std::size_t> prompt_tokens;
   std::vector<std::size_t> generated_tokens;
   std::vector<float> generated_logits;

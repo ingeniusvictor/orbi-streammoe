@@ -168,6 +168,8 @@ QwenGreedyTextSession::generate(
     result.decode_ns = token_result.decode_ns;
     result.prompt_step_durations_ns = token_result.prompt_step_durations_ns;
     result.decode_step_durations_ns = token_result.decode_step_durations_ns;
+    result.prefill_cache = token_result.prefill_cache;
+    result.decode_cache = token_result.decode_cache;
     result.prompt_tokens = token_result.prompt_tokens.empty()
         ? result.prompt_tokens
         : token_result.prompt_tokens;
