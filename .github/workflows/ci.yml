@@ -127,6 +127,9 @@ jobs:
       - name: Verify OSM-43D tooling syntax
         run: python -m py_compile scripts/certify_qwen_bounded_generation.py scripts/test_qwen_bounded_generation_gate.py
 
+      - name: Verify OSM-44A tooling syntax
+        run: python -m py_compile scripts/qwen_chat_template_reference.py scripts/test_qwen_chat_template_contract.py
+
       - name: Install Linux Vulkan software driver
         if: runner.os == 'Linux'
         run: |
