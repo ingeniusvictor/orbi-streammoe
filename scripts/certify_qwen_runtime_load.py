@@ -4,6 +4,7 @@ import hashlib
 import json
 import pathlib
 import subprocess
+import sys
 from typing import Any
 
 OFFICIAL_MODEL = "Qwen/Qwen3-Next-80B-A3B-Instruct"
@@ -71,8 +72,13 @@ def run_runtime_probe(
     executable: pathlib.Path,
     checkpoint_dir: pathlib.Path,
 ) -> dict:
+    argv = (
+        [sys.executable, str(executable), str(checkpoint_dir)]
+        if executable.suffix.lower() == ".py"
+        else [str(executable), str(checkpoint_dir)]
+    )
     completed = subprocess.run(
-        [str(executable), str(checkpoint_dir)],
+        argv,
         check=False,
         capture_output=True,
         text=True,
