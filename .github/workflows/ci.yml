@@ -97,6 +97,12 @@ jobs:
       - name: Verify OSM-42C tooling syntax
         run: python -m py_compile scripts/guard_qwen_windows_start.py scripts/test_qwen_windows_guarded_start.py
 
+      - name: Verify OSM-42D Windows conversion evidence
+        run: python scripts/test_qwen_windows_conversion_evidence.py
+
+      - name: Verify OSM-42D tooling syntax
+        run: python -m py_compile scripts/certify_qwen_windows_conversion.py scripts/test_qwen_windows_conversion_evidence.py
+
       - name: Install Linux Vulkan software driver
         if: runner.os == 'Linux'
         run: |
