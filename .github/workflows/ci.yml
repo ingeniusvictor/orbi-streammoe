@@ -115,6 +115,12 @@ jobs:
       - name: Verify OSM-43B tooling syntax
         run: python -m py_compile scripts/certify_qwen_first_token.py scripts/test_qwen_first_token_gate.py
 
+      - name: Verify OSM-43C official text first-token gate
+        run: python scripts/test_qwen_text_first_token_gate.py
+
+      - name: Verify OSM-43C tooling syntax
+        run: python -m py_compile scripts/certify_qwen_text_first_token.py scripts/test_qwen_text_first_token_gate.py
+
       - name: Install Linux Vulkan software driver
         if: runner.os == 'Linux'
         run: |
