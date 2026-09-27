@@ -136,6 +136,12 @@ jobs:
       - name: Verify OSM-44C tooling syntax
         run: python -m py_compile scripts/certify_qwen_chat_generation.py scripts/test_qwen_chat_generation_gate.py
 
+      - name: Verify OSM-45A performance instrumentation
+        run: python scripts/test_qwen_chat_performance.py
+
+      - name: Verify OSM-45A tooling syntax
+        run: python -m py_compile scripts/measure_qwen_chat_performance.py scripts/test_qwen_chat_performance.py
+
       - name: Install Linux Vulkan software driver
         if: runner.os == 'Linux'
         run: |
