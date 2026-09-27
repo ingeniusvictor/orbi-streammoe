@@ -50,7 +50,7 @@ jobs:
           cargo --version
 
       - name: Install pinned Python tokenizer and chat-template oracles
-        run: python -m pip install tokenizers==0.22.1 transformers==4.57.1
+        run: python -m pip install tokenizers==0.22.1 transformers==4.57.1 jinja2==3.1.6
 
       - name: Generate official Qwen parity vectors
         run: python scripts/qwen_tokenizer_reference.py --asset-dir .orbi-qwen-tokenizer --output .orbi-qwen-tokenizer/parity.json
